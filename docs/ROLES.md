@@ -13,6 +13,12 @@ entirely through a spectrum display.
 Those roles are cheap to build **and** more distinctive than anything else on the
 market. The rifleman is the expensive one, and every other shooter already has it.
 
+> **The prototype uses two of these roles.** The 2v2 prototype in PROTOTYPE.md
+> pairs the FPV drone operator with the first-person rifleman. That changes the
+> economics below in one important way: **player-versus-player deletes the enemy
+> AI requirement**, which is most of what made the rifleman expensive. The full
+> seven-role plan here is still the long-term shape.
+
 ## Cost reality
 
 Roles differ in build cost by roughly 50x. Knowing which is which decides your
@@ -27,6 +33,10 @@ whole build order.
 | Sapper / demolitions | Yes | Some | Yes (patrols) | Medium |
 | Vehicle crew | Partly | Some | Yes | Medium-high |
 | Infantry rifleman | Yes | **Everything** | **Yes, good** | **Very high** |
+
+**In player-versus-player, the "enemy AI" column becomes No for every role** — and
+that column is most of the rifleman's cost. This is why the 2v2 prototype can
+afford an infantry role that the single-player plan had to postpone for a year.
 
 ## First person on foot — decided
 

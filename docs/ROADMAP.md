@@ -7,55 +7,70 @@ die.
 Estimates assume a few hours a week while learning as you go. Halve them if you
 have more time. Do not be discouraged if they run long; they will.
 
-> **This roadmap changed when the project added 3D and player roles.** It now
-> builds the cheapest, most distinctive role to a high standard first, and adds
-> the expensive ones later. See ROLES.md for why the ordering is what it is.
+> **The first five months now live in [PROTOTYPE.md](PROTOTYPE.md)** — a 2v2
+> multiplayer game pairing one drone operator with one first-person shooter per
+> team. That document is what you build next; this one is what comes after it.
+>
+> Phase 0 below is a summary of the prototype. Phases 1-4 are the long game, and
+> they now assume the prototype exists.
 
 ---
 
-## Phase 1 — The drone (months 1-3)
+## Phase 0 — The 2v2 prototype (months 1-5) — **START HERE**
 
-### M0 — Godot, a hill, and a camera you can fly
-A terrain, a sky, and a camera you control with a gamepad or keyboard. No game
-yet. Just flight that feels right.
+Full detail in [PROTOTYPE.md](PROTOTYPE.md). In brief:
 
-**Done when:** flying around the terrain is genuinely enjoyable with nothing else
-in the scene. If flight feels bad, everything built on it feels bad.
-**Teaches:** Godot scenes, 3D transforms, input, terrain.
-**Estimate:** 3-4 weeks. *This is where most people quit. Push through it.*
+| | | |
+|---|---|---|
+| **P0** | Walk around — first-person movement, single player | 4 weeks |
+| **P1** | **Networking spike** — two cubes, two machines ⚠ | 3 weeks |
+| **P2** | The drone, networked, with a killable operator | 3 weeks |
+| **P3** | Shooting and dying | 4 weeks |
+| **P4** | The video feed shader and the FPV strike | 3 weeks |
+| **P5** | The round loop — roles, elimination, score, reset | 3 weeks |
+| **P6** | The realism pass — deletions, sound, lighting | 3 weeks |
 
-### M1 — The video feed
-The shader that turns your clean 3D render into an FPV goggles view: low
-resolution, scanlines, compression artefacts, interference that worsens with
-distance, a battery readout, and a signal-loss state.
+⚠ **P1 is not optional and cannot be moved later.** Retrofitting multiplayer is a
+rewrite, not a feature.
 
-**Done when:** a screenshot is hard to tell apart from real FPV footage.
-**Why so early:** this is the single biggest "looks realistic" win in the project,
-it is mostly one shader file, and it makes everything you build afterwards look
-better. See REALISM.md.
-**Estimate:** 2 weeks.
-
-### M2 — Something to kill
-A handful of vehicles in the world. Flight physics with momentum. Impact
-detection, damage by hit location, and an explosion with real sound.
-
-**Done when:** you dive on a parked vehicle, hit the engine deck, and it is
-genuinely satisfying.
-**Estimate:** 3 weeks.
-
-### M3 — A mission ⭐
-Take off from a tree line, fly out with a finite battery, find a target that is
-trying to hide, hit it. Fail states: battery dead, lost signal, missed, shot down.
-
-**⭐ This is the vertical slice.** At M3 you have a complete, novel, genuinely
-good small game. Three months in. Put it in front of people.
-**Estimate:** 3 weeks.
+**At the end of Phase 0 you have a complete, playable, genuinely novel game.**
+Everything below is expansion, and none of it is required.
 
 ---
 
-## Phase 2 — The war underneath (months 4-7)
+## Phase 1 — Depth in the prototype (months 6-9)
 
-### M4 — The simulation layer
+Now that four people can play, make the thing they are playing better.
+
+### M1 — More drones
+The recon quadcopter as a distinct choice from the FPV strike drone, and the
+fibre-optic FPV that jamming cannot touch.
+**Estimate:** 3 weeks.
+
+### M2 — Electronic warfare, as a third role
+A portable jammer on the map. It denies airspace, and it makes whoever is running
+it a target. This is where the game stops resembling anything else on the market.
+**Estimate:** 4 weeks. Consider 3v3 at this point.
+
+### M3 — Night
+Real darkness, night vision with a narrow field of view and grain, thermal cameras
+on the drone. Changes every tactic in the game.
+**Estimate:** 4 weeks.
+
+### M4 — The sapper role
+Demolitions: cross open ground, place a charge, withdraw. Works as an objective
+mode alongside elimination.
+**Estimate:** 5 weeks.
+
+---
+
+## Phase 2 — The war underneath (months 10-16)
+
+The simulation layer from DESIGN.md: a persistent war running underneath the
+matches, so that what you did last round changes what is available next round.
+This is the ambitious part, and it is entirely optional.
+
+### M5 — The simulation layer
 Layer 1 from TECH.md: units, supply, ammunition, movement, ticking forward
 independently of what you are looking at. Headless and testable.
 
@@ -64,76 +79,49 @@ numbers still make sense.
 **Estimate:** 4-5 weeks. Unglamorous, and it is what makes everything after this
 possible.
 
-### M5 — Contacts and fog of war
+### M6 — Contacts and fog of war
 Sensors, detection rolls, contacts that age and drift and misclassify. Both sides
 act on beliefs, never on truth.
 
 **Done when:** you fly out to a marked contact and find the enemy left an hour ago.
 **Estimate:** 3 weeks.
 
-### M6 — Artillery, and the recon drone role
-The second role. Loiter, find, mark, call fire, watch the flight time elapse,
+### M7 — Artillery and the spotter loop
+Off-map guns your drone operator can call. Loiter, find, mark, call fire, watch the flight time elapse,
 correct, watch them scatter. Shells land where you *thought* the target was.
 
 **Done when:** you spot for guns you are not controlling and it feels like a job.
 **Estimate:** 4 weeks.
 
-### M7 — The mortar crew role
+### M8 — The mortar crew role
 The other end of the same radio. Grid reference, charge, elevation, deflection,
 fire, wait, correct, fire for effect — then displace before counterbattery lands.
 
 **Done when:** you get greedy, fire one extra mission before moving, and die for it.
-**Estimate:** 2-3 weeks. Cheap, because it reuses M6 entirely.
+**Estimate:** 2-3 weeks. Cheap, because it reuses M7 entirely.
 
 ---
 
-## Phase 3 — The spectrum (months 8-10)
+## Phase 3 — Further roles (months 17+)
 
-### M8 — Electronic warfare
-The jamming field. Flying into a jammed area degrades your link and can lose you
-the drone. Fibre-optic FPVs ignore it — the answer to the answer.
+By this point the game tells you what it needs. These are candidates, not a plan.
 
-**Done when:** a jammer denies a whole sector to your drones and changes how you
-fly.
-**Estimate:** 3 weeks.
-
-### M9 — The EW operator role
-A spectrum display. Find emitters, choose what to jam, and live with the fact that
-jamming makes you a target.
-
-**Done when:** you jam at the right moment to save an assault, and a loitering
-munition arrives twenty minutes later.
-**Estimate:** 3 weeks. Almost pure interface, and nothing else on the market does it.
-
----
-
-## Phase 4 — On foot (months 11-18+)
-
-### M10 — Character controller and night
-First-person movement, stamina, weight, stance. Night rendering and night vision
-with a narrow field of view and real grain.
-
-**Estimate:** 6 weeks.
-
-### M11 — The sapper role
-Cross open ground at night, avoid patrols and thermal cameras, place a charge, and
-withdraw — which is the hard part.
-
-**Done when:** the withdrawal is more frightening than the approach.
-**Estimate:** 6 weeks.
-
-### M12 — Infantry combat
-Ballistics, lethality, suppression, wounds and bleeding. Enemy AI with perception,
-cover and pathfinding.
-
-**Estimate:** 4-6 months, honestly, and possibly more. Combat AI is one of the
-hardest problems in the field, and bad AI destroys realism instantly.
-
-### M13 — Vehicles
-Driver, gunner and commander seats. Third-person camera, which is correct and
-cheap here.
-
+### M9 — Vehicles
+Driver, gunner and commander as separate seats. Third-person camera, which is
+correct and cheap here because a vehicle is a rigid body with no animation problem.
 **Estimate:** 2-3 months.
+
+### M10 — Single-player and co-op
+Everything up to here is player-versus-player, which is what let you skip combat
+AI entirely. Adding a single-player mode means finally writing that AI: perception,
+cover selection, pathfinding, suppression response.
+**Estimate:** 4-6 months, honestly, and possibly more. Combat AI is one of the
+hardest problems in the field, and bad AI destroys realism instantly. Only do this
+if people are actually asking for it.
+
+### M11 — Whatever the players are asking for by then
+Four people will have played this for a year. Listen to them instead of to this
+document.
 
 ---
 
@@ -141,28 +129,26 @@ cheap here.
 
 | Target | Realistic time, few hours a week |
 |---|---|
-| **M3 — a complete FPV drone game** | **~3 months** |
-| M7 — three roles and a live war underneath | ~7 months |
-| M9 — plus electronic warfare | ~10 months |
-| M11 — plus night infiltration | ~15 months |
-| M13 — the full vision | **2-3 years** |
+| **Phase 0 — a complete, playable 2v2** | **~5 months** |
+| Phase 1 — plus EW, night and the sapper | ~9 months |
+| Phase 2 — plus a persistent war underneath | ~16 months |
 
-The two-to-three-year figure is not a warning, it is just what this genre costs.
-*Squad*, *Insurgency* and *Zero Hour* were all built by teams over years. What
-makes this plan work is that **you have something worth playing at month three**,
-and every phase after that is an addition rather than a prerequisite.
-
-If you stop at M3, you made a good game. If you stop at M7, you made something
-nobody else has made. Neither is failure.
+**Phase 0 is the real goal.** If you finish it and stop, you have made a good
+game that nobody else has made. Everything after it is optional expansion, and
+the decision to continue should be made by whether four people actually enjoy
+playing it — not by this document.
 
 ## Rules for not failing
 
-1. **Never break the two-layer rule** in TECH.md section 2.
-2. **Build roles cheapest-first.** The rifleman is not a starting point.
+1. **Never break the two-layer rule** in TECH.md section 2. With networking it
+   becomes: the host owns the state, everyone else renders it.
+2. **Do the networking spike early.** P1, month two. This is the one ordering
+   mistake that cannot be undone cheaply.
 3. **Delete before you add.** REALISM.md Part 1 is free and worth more than months
    of art.
 4. **Commit every session**, even broken work, on a branch.
-5. **Play your own game at every milestone.** If M3 is not fun, M12 will not
-   rescue it.
+5. **Play your own game at every milestone**, with other people, from P1 onward.
+   A multiplayer game that is not fun with four friends will not be rescued by
+   anything in Phase 2.
 6. **When stuck or bored, tune data or work on sound.** Both are real progress and
    both are more fun than debugging.

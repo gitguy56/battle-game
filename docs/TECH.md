@@ -134,6 +134,32 @@ Every number describing the world lives in JSON, never buried in code:
 Balancing then becomes editing a file rather than hunting for a magic number, and
 improving realism becomes an evening's research rather than a refactor.
 
+## 4b. Networking
+
+The prototype is multiplayer from the start (PROTOTYPE.md), so this is not an
+afterthought — it shapes the code from week one.
+
+**Use Godot 4's high-level multiplayer.** `ENetMultiplayerPeer` for the connection,
+`MultiplayerSpawner` for creating players, `MultiplayerSynchronizer` for keeping
+positions in step, and `@rpc` functions for events. For four players this is
+genuinely approachable, and you can test with two windows on one machine before
+involving anyone else.
+
+**One player hosts.** No dedicated server, no matchmaking. Connect by IP or room
+code. At 2v2 this is entirely adequate and saves you months.
+
+**The rule: the host decides.** Clients send *inputs* — "I am pressing forward",
+"I pulled the trigger". The host works out what actually happened and tells
+everyone. A client never declares its own hits.
+
+This matters even among friends where cheating is not a concern, because it is the
+only way to have one consistent answer to "did that bullet connect?". Two machines
+disagreeing about whether someone died is the most common and most miserable
+multiplayer bug there is.
+
+Note how cleanly this sits on top of the two-layer rule in section 2: the host owns
+the state, everyone else renders it. Same principle, now enforced by the network.
+
 ## 5. What to learn, in order
 
 Do not read ahead. Learn each thing *because* the next milestone needs it.
@@ -149,7 +175,9 @@ Do not read ahead. Learn each thing *because* the next milestone needs it.
 5. **Lighting and environment** — HDRIs, fog, post-processing. This is where
    "looks realistic" actually comes from. (ongoing)
 6. **Audio** — buses, 3D positional sound, reverb. (1 week)
-7. **Git** — commit, branch, push. You have the repository already. (ongoing)
+7. **Godot high-level multiplayer** — peers, spawners, synchronizers, RPCs.
+   Learn this at P1, before building anything on top of it. (2 weeks)
+8. **Git** — commit, branch, push. You have the repository already. (ongoing)
 
 Everything past that, learn when a milestone demands it.
 

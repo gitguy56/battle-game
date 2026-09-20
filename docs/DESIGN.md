@@ -305,7 +305,10 @@ Writing this list down is as important as the design itself.
   not. Realism comes from restraint, sound and lighting — see REALISM.md.
 - **Third-person characters on foot.** First person only, on foot. Third person is
   reserved for vehicles, where it is cheap. See ROLES.md.
-- **Multiplayer.** Add it much later, if ever. It roughly doubles the work.
+- **Large-scale multiplayer.** No 32-player servers, matchmaking, dedicated
+  hosting or anti-cheat. The 2v2 prototype is four players with one acting as
+  host, designed in from the start — which is a different and far cheaper thing
+  than bolting multiplayer onto a finished single-player game. See PROTOTYPE.md.
 - **The whole war.** One sector, one brigade. Strategic scope abstracts away every
   interesting mechanic.
 - **Every vehicle in existence.** Twenty well-modelled unit types beat two hundred
