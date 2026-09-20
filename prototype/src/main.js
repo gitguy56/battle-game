@@ -9,6 +9,7 @@ import { UI } from './ui.js';
 import { Settings } from './settings.js';
 import { Mission, PHASE } from './mission.js';
 import { Pickups } from './pickups.js';
+import { Effects } from './effects.js';
 import { WEAPONS } from './weapons.js';
 
 // ------------------------------------------------------------------ setup ---
@@ -43,7 +44,8 @@ const audio = new Audio();
 const hud = new HUD(document.getElementById('hud'));
 const ui = new UI(document.getElementById('ui'), settings);
 const player = new Player(map);
-const weapon = new Weapon(camera, scene, audio);
+const effects = new Effects(scene);
+const weapon = new Weapon(camera, scene, audio, effects);
 const rig = new BodycamRig(camera);
 const post = new PostFX(renderer);
 const pickups = new Pickups(scene);
@@ -140,6 +142,7 @@ function tryPickUp() {
 function startMission() {
   mission?.dispose();
   pickups.clear();
+  effects.clear();
   const diff = settings.difficulty;
   player.reset(diff.playerHp);
   weapon.reset([{ id: 'rifle' }, { id: 'pistol' }]);
@@ -196,6 +199,9 @@ hud.setVisible(false);
 
 // ------------------------------------------------------------------- loop ---
 function enemyTracer(from, to) {
+  // flash at their muzzle so you can see where fire is coming from
+  const dir = to.clone().sub(from).normalize();
+  effects.muzzle(from.clone().addScaledVector(dir, 0.35), dir);
   const j = new THREE.Vector3((Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.0, (Math.random() - 0.5) * 1.6);
   const g = new THREE.BufferGeometry().setFromPoints([from, to.clone().add(j)]);
   const m = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xffd090, transparent: true, opacity: 0.9 }));
@@ -254,6 +260,7 @@ function tick() {
   const dying = state === 'playing' && !player.alive;
   fade += ((dying ? 0.2 : 1) - fade) * Math.min(1, dt * 1.1);
 
+  effects.update(dt, camera);
   rig.update(dt, player, map.indoor(player.pos));
   hud.showCrosshair(state === 'playing' && player.alive);
   hud.update(dt, weapon.spread, camera.fov, size()[1]);
@@ -272,7 +279,7 @@ tick();
 // Debug hook: poke at the game from the browser console, and let the automated
 // smoke tests drive it without a mouse.
 window.__dbg = {
-  player, weapon, rig, map, scene, renderer, input, settings, ui, hud, pickups,
+  player, weapon, rig, map, scene, renderer, input, settings, ui, hud, pickups, effects,
   get enemies() { return mission ? mission.enemies : []; },
   get mission() { return mission; },
   get state() { return state; },

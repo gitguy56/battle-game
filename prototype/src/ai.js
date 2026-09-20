@@ -57,35 +57,55 @@ export class Enemy {
     const uniform = new THREE.MeshLambertMaterial({ color: this.type.uniform });
     const gear = new THREE.MeshLambertMaterial({ color: this.type.gear });
     const skin = new THREE.MeshLambertMaterial({ color: 0xb08a68 });
-    const steel = new THREE.MeshLambertMaterial({ color: 0x2b2a27 });
 
     this.group = new THREE.Group();
     this.hitMeshes = [];
-    const put = (geo, mat, x, y, z, tag, rx = 0, rz = 0) => {
+    const mesh = (geo, mat, x, y, z, tag, parent) => {
       const m = new THREE.Mesh(geo, mat);
       m.position.set(x, y, z);
-      m.rotation.x = rx; m.rotation.z = rz;
       m.castShadow = true;
       m.userData.enemy = this; m.userData.part = tag;
-      this.group.add(m);
+      (parent || this.group).add(m);
       if (tag) this.hitMeshes.push(m);
       return m;
     };
+    // Limbs hang off pivot groups placed at the hip and shoulder, so they can
+    // actually swing rather than slide.
+    const pivot = (x, y, z) => {
+      const g = new THREE.Group();
+      g.position.set(x, y, z);
+      this.group.add(g);
+      return g;
+    };
 
-    // Rounder shapes than plain boxes - the silhouette reads much better.
-    put(new THREE.CapsuleGeometry(0.19, 0.42, 4, 10), uniform, 0, 1.18, 0, 'body');
-    put(new THREE.BoxGeometry(0.44, 0.34, 0.28), gear, 0, 1.24, 0.01, 'body');   // carrier
-    put(new THREE.SphereGeometry(0.115, 12, 10), skin, 0, 1.60, 0, 'head');
-    put(new THREE.SphereGeometry(0.135, 12, 8, 0, Math.PI * 2, 0, Math.PI / 1.9),
-        gear, 0, 1.60, 0, 'head');                                                // helmet
+    mesh(new THREE.CapsuleGeometry(0.19, 0.42, 4, 10), uniform, 0, 1.18, 0, 'body');
+    mesh(new THREE.BoxGeometry(0.44, 0.34, 0.28), gear, 0, 1.24, 0.01, 'body');
+    mesh(new THREE.SphereGeometry(0.115, 12, 10), skin, 0, 1.60, 0, 'head');
+    mesh(new THREE.SphereGeometry(0.135, 12, 8, 0, Math.PI * 2, 0, Math.PI / 1.9),
+         gear, 0, 1.60, 0, 'head');
+
+    this.legs = []; this.arms = [];
     for (const s of [-1, 1]) {
-      put(new THREE.CapsuleGeometry(0.068, 0.34, 4, 8), uniform,
-          s * 0.27, 1.22, s > 0 ? 0.06 : 0.02, 'body', s > 0 ? -0.5 : -0.3);
-      put(new THREE.CapsuleGeometry(0.088, 0.46, 4, 8), uniform, s * 0.115, 0.52, 0, 'body');
-      put(new THREE.BoxGeometry(0.13, 0.09, 0.26), steel, s * 0.115, 0.06, 0.04, 'body');
+      const hip = pivot(s * 0.115, 0.95, 0);
+      mesh(new THREE.CapsuleGeometry(0.088, 0.44, 4, 8), uniform, 0, -0.26, 0, 'body', hip);
+      mesh(new THREE.BoxGeometry(0.13, 0.09, 0.26), gear, 0, -0.50, 0.04, 'body', hip);
+      this.legs.push(hip);
+
+      const sh = pivot(s * 0.27, 1.42, 0);
+      mesh(new THREE.CapsuleGeometry(0.068, 0.34, 4, 8), uniform, 0, -0.2, 0, 'body', sh);
+      this.arms.push(sh);
     }
-    put(new THREE.BoxGeometry(0.06, 0.085, 0.76), steel, 0.2, 1.24, -0.3, null);
-    put(new THREE.BoxGeometry(0.045, 0.16, 0.09), steel, 0.2, 1.14, -0.16, null, 0.3);
+
+    // They carry the weapon they actually shoot, so you can see what is coming.
+    this.weaponModel = buildModel(this.type.weapon);
+    this.weaponModel.scale.setScalar(0.85);
+    this.weaponModel.position.set(0.24, 1.22, -0.3);
+    this.group.add(this.weaponModel);
+
+    this.walkPhase = Math.random() * Math.PI * 2;
+    this.lastPos = this.pos.clone();
+    this.deathT = 0;
+    this.deathTilt = 0;
 
     this.group.position.copy(this.pos);
     scene.add(this.group);
@@ -106,7 +126,7 @@ export class Enemy {
   }
 
   update(dt, player, onEnemyShot) {
-    if (!this.alive) return;
+    if (!this.alive) { this.animateDeath(dt); return; }
     this.shotCooldown = Math.max(0, this.shotCooldown - dt);
     this.coverCooldown = Math.max(0, this.coverCooldown - dt);
 
@@ -142,6 +162,38 @@ export class Enemy {
 
     this.group.position.copy(this.pos);
     this.group.rotation.y = this.yaw;
+    this.animate(dt);
+  }
+
+  // Legs and arms swing in proportion to how fast they are actually moving.
+  animate(dt) {
+    const moved = this.pos.distanceTo(this.lastPos) / Math.max(dt, 0.0001);
+    this.lastPos.copy(this.pos);
+    const gait = Math.min(moved / 3.0, 1);
+    this.walkPhase += dt * (5.5 + moved * 1.8);
+    const swing = Math.sin(this.walkPhase) * 0.75 * gait;
+    this.legs[0].rotation.x = swing;
+    this.legs[1].rotation.x = -swing;
+    // The left arm swings; the right holds the weapon up and steady.
+    this.arms[0].rotation.x = -swing * 0.6;
+    this.arms[1].rotation.x = -0.9;
+    this.arms[1].rotation.z = 0.25;
+    this.group.position.y = this.pos.y + Math.abs(Math.sin(this.walkPhase)) * 0.035 * gait;
+    if (this.weaponModel) {
+      this.weaponModel.position.y = 1.22 + Math.abs(Math.sin(this.walkPhase)) * 0.02 * gait;
+    }
+  }
+
+  // Fall over the way the shot pushed them, rather than snapping flat.
+  animateDeath(dt) {
+    if (this.deathT >= 1) return;
+    this.deathT = Math.min(1, this.deathT + dt * 2.6);
+    const e = 1 - Math.pow(1 - this.deathT, 3);       // ease out
+    this.group.rotation.x = this.deathTilt * e;
+    this.group.rotation.z = this.deathRoll * e;
+    this.group.position.y = this.pos.y - 0.12 * e;
+    for (const l of this.legs) l.rotation.x *= 1 - dt * 3;
+    for (const a of this.arms) { a.rotation.x *= 1 - dt * 3; a.rotation.z *= 1 - dt * 3; }
   }
 
   // Shout. Anyone close enough now knows roughly where you are, so walking into
@@ -293,7 +345,11 @@ export class Enemy {
     }
   }
 
-  takeHit(damage, audio) {
+  forward() {
+    return new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+  }
+
+  takeHit(damage, audio, fromDir) {
     if (!this.alive) return;
     this.hp -= damage;
     audio?.flesh();
@@ -304,8 +360,10 @@ export class Enemy {
     if (this.hp <= 0) {
       this.alive = false;
       this.state = 'dead';
-      this.group.rotation.x = -Math.PI / 2.1;
-      this.group.position.y = 0.3;
+      // Tip over away from whoever shot them, with a bit of roll for variety.
+      this.deathTilt = (fromDir && fromDir.dot(this.forward()) > 0 ? 1 : -1) * (Math.PI / 2.05);
+      this.deathRoll = (Math.random() - 0.5) * 0.5;
+      this.deathT = 0;
       for (const m of this.hitMeshes) m.userData.enemy = null;
       if (this.weaponModel) this.group.remove(this.weaponModel);
       this.dropped = { id: this.type.weapon, pos: this.pos.clone() };

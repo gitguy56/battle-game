@@ -9,8 +9,9 @@ export const BODY_DAMAGE = 1;
 const UP = new THREE.Vector3(0, 1, 0);
 
 export class Weapon {
-  constructor(camera, scene, audio) {
+  constructor(camera, scene, audio, effects) {
     this.camera = camera; this.scene = scene; this.audio = audio;
+    this.fx = effects;
     this.slots = [];
     this.active = 0;
     this.view = null;
@@ -56,8 +57,11 @@ export class Weapon {
     this.view.rotation.y = -0.05;
     this.view.position.copy(this.restPos);
     this.holder.add(this.view);
-    this.muzzle = muzzleZ(this.spec.id);
-    this.flash.position.set(0.1, -0.06, this.muzzle * 0.8);
+    this.muzzleZ = muzzleZ(this.spec.id);
+    this.flash.position.set(0.1, -0.06, this.muzzleZ * 0.8);
+    this.muzzlePoint = new THREE.Object3D();
+    this.muzzlePoint.position.set(0, 0.01, this.muzzleZ);
+    this.view.add(this.muzzlePoint);
   }
 
   swap() {
@@ -183,10 +187,11 @@ export class Weapon {
         const owner = h.object.userData.enemy;
         if (owner) {
           const head = h.object.userData.part === 'head';
-          owner.takeHit(head ? s.head : s.body, this.audio);
+          owner.takeHit(head ? s.head : s.body, this.audio, dir);
           if (head || !bestTag) bestTag = head ? 'head' : 'body';
+          if (p < 4) this.fx?.hit(h.point, dir, this.camera);
         } else if (p < 3) {
-          this.impact(h.point, h.face?.normal);
+          this.fx?.impact(h.point, h.face?.normal, this.camera);
         }
       }
       if (p < 4) this.tracer(origin.clone().addScaledVector(dir, 0.5), end);
@@ -198,6 +203,16 @@ export class Weapon {
     player.yaw += this.recoilYaw * 0.85;
     this.kick = 1;
     this.flash.intensity = s.pellets > 1 ? 9 : 5;
+
+    if (this.fx) {
+      const mp = new THREE.Vector3();
+      this.muzzlePoint.getWorldPosition(mp);
+      this.fx.muzzle(mp, base);
+      // brass out of the right-hand side of the receiver
+      const right = new THREE.Vector3().crossVectors(base, UP).normalize();
+      const up = new THREE.Vector3().crossVectors(right, base).normalize();
+      this.fx.casing(mp.clone().addScaledVector(base, -0.45).addScaledVector(right, 0.05), right, up);
+    }
     onShot?.(origin, bestTag);
   }
 
@@ -207,15 +222,6 @@ export class Weapon {
       color: 0xffe0a0, transparent: true, opacity: 1 }));
     this.scene.add(m);
     this.tracers.push({ mesh: m, life: 0.06 });
-  }
-
-  impact(point, normal) {
-    const g = new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 3),
-      new THREE.MeshBasicMaterial({ color: 0x3a3630 }));
-    g.position.copy(point);
-    if (normal) g.position.addScaledVector(normal, 0.02);
-    this.scene.add(g);
-    setTimeout(() => this.scene.remove(g), 9000);
   }
 
   startReload() {
