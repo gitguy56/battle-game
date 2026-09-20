@@ -10,7 +10,8 @@ import { HUD } from './hud.js';
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-renderer.setSize(innerWidth, innerHeight);
+const size = () => [canvas.clientWidth || innerWidth, canvas.clientHeight || innerHeight];
+renderer.setSize(...size(), false);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.NoToneMapping; // done in the bodycam shader instead
@@ -34,7 +35,7 @@ scene.add(sun);
 const map = buildMap(scene);
 
 // A wide lens, as a bodycam has.
-const camera = new THREE.PerspectiveCamera(88, innerWidth / innerHeight, 0.05, 400);
+const camera = new THREE.PerspectiveCamera(88, size()[0] / size()[1], 0.05, 400);
 scene.add(camera);
 
 const audio = new Audio();
@@ -103,7 +104,8 @@ document.addEventListener('pointerlockchange', () => {
 });
 
 addEventListener('resize', () => {
-  renderer.setSize(innerWidth, innerHeight);
+  const size = () => [canvas.clientWidth || innerWidth, canvas.clientHeight || innerHeight];
+renderer.setSize(...size(), false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   post.setSize(innerWidth, innerHeight);

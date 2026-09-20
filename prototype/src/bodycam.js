@@ -162,7 +162,7 @@ void main(){
 export class PostFX {
   constructor(renderer) {
     this.renderer = renderer;
-    const s = renderer.getSize(new THREE.Vector2());
+    const s = renderer.getDrawingBufferSize(new THREE.Vector2());
     const opts = { depthBuffer: true, type: THREE.HalfFloatType };
     this.sceneRT = new THREE.WebGLRenderTarget(s.x, s.y, opts);
     this.sceneRT.texture.colorSpace = THREE.LinearSRGBColorSpace;

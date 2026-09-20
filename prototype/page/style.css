@@ -1,0 +1,43 @@
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  body { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+  #game { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10;
+         text-transform: uppercase; letter-spacing: 0.08em; }
+  #bc-frame { position: absolute; inset: 0; }
+  #bc-frame > div { position: absolute; font-size: 13px; color: #e8e8e8;
+    text-shadow: 0 1px 3px #000, 0 0 10px rgba(0,0,0,.8); opacity: .88; }
+  .bc-tl { top: 18px; left: 22px; }
+  .bc-tr { top: 18px; right: 22px; }
+  .bc-bl { bottom: 18px; left: 22px; }
+  .bc-br { bottom: 18px; right: 22px; font-size: 11px; opacity: .55 !important; }
+  #bc-rec { color: #ff3b30; font-size: 15px; }
+  .bc-cell { display: inline-block; width: 22px; height: 11px; border: 1.5px solid #e8e8e8;
+    border-radius: 2px; position: relative; vertical-align: -1px; margin-left: 3px; }
+  .bc-cell::before { content: ""; position: absolute; inset: 1.5px; right: 40%; background: #e8e8e8; }
+  .bc-cell::after { content: ""; position: absolute; right: -4px; top: 3px; width: 2px;
+    height: 5px; background: #e8e8e8; }
+
+  #bc-msg { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%);
+    color: #f0f0f0; font-size: 14px; opacity: 0; transition: opacity .35s;
+    text-shadow: 0 2px 6px #000; white-space: nowrap; }
+
+  #bc-center { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; opacity: 0;
+    transition: opacity 1.2s; color: #fff; }
+  #bc-center b { font-size: 34px; letter-spacing: .22em; font-weight: 600; }
+  #bc-center span { font-size: 13px; opacity: .6; letter-spacing: .14em; }
+
+  #briefing { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 22px; background: #070807;
+    color: #d8d8d8; text-align: center; padding: 24px; cursor: pointer; }
+  #briefing h1 { font-size: 26px; letter-spacing: .3em; font-weight: 600; }
+  #briefing .sub { font-size: 12px; opacity: .5; letter-spacing: .2em; text-transform: uppercase; }
+  #briefing table { font-size: 13px; line-height: 2; opacity: .8; border-spacing: 26px 0; }
+  #briefing td:first-child { text-align: right; color: #7f8f7f; white-space: nowrap; }
+  #briefing td:last-child { text-align: left; }
+  #bc-start { font-size: 13px; letter-spacing: .2em; text-transform: uppercase;
+    border: 1px solid #3a463a; padding: 12px 26px; opacity: .85; }
+  #briefing .note { font-size: 11px; opacity: .35; max-width: 460px; line-height: 1.8; }
