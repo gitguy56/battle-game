@@ -47,13 +47,15 @@ const rig = new BodycamRig(camera);
 const post = new PostFX(renderer);
 
 const enemies = map.enemyPosts.map(p => new Enemy(scene, p, map, audio));
+for (const e of enemies) e.squad = enemies;
 
 // ---------------------------------------------------------------- input ----
-const input = { fwd: 0, back: 0, left: 0, right: 0, sprint: 0, crouch: 0, fire: 0, ads: 0 };
+const input = { fwd: 0, back: 0, left: 0, right: 0, sprint: 0, crouch: 0, fire: 0, ads: 0, jump: 0 };
 const KEYS = {
   KeyW: 'fwd', KeyS: 'back', KeyA: 'left', KeyD: 'right',
   ArrowUp: 'fwd', ArrowDown: 'back', ArrowLeft: 'left', ArrowRight: 'right',
   ShiftLeft: 'sprint', ShiftRight: 'sprint', KeyC: 'crouch', ControlLeft: 'crouch',
+  Space: 'jump',
 };
 
 let state = 'briefing';
@@ -189,7 +191,7 @@ tick();
 // Debug hook: lets you poke at the game from the browser console, and lets the
 // automated smoke test drive it without a mouse. Harmless to leave in.
 window.__dbg = {
-  player, enemies, rig, weapon, map, scene, renderer,
+  player, enemies, rig, weapon, map, scene, renderer, input,
   play() { state = 'playing'; briefing.style.display = 'none'; },
   teleport(x, y, z) { player.pos.set(x, y, z); player.vel.set(0, 0, 0); },
   face(yaw, pitch = 0) { player.yaw = yaw; player.pitch = pitch; rig.yaw = yaw; rig.pitch = pitch; },

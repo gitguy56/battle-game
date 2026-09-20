@@ -11,6 +11,7 @@ offline. Everything is in that one file.
 | move | `W A S D` |
 | sprint | `Shift` — costs stamina, cannot be held |
 | crouch | `C` — quieter, steadier, harder to spot |
+| climb / vault | `Space` — through windows, the shell hole, over walls |
 | fire | left mouse |
 | aim | right mouse — hold; tightens the crosshair |
 | reload | `R` — takes 2.8s, and you lose the partial magazine |
@@ -46,9 +47,11 @@ transfers to Godot directly. The code does not, and is not meant to.
 - **The map** — a house of four rooms off a central corridor with a different
   floor in each, a barn you can fight inside, stone walls, crates and barrels for
   cover, a well, and a shell hole punched through the back wall.
-- **Three enemies** — patrol, notice you (faster if you are moving and standing),
-  close, and shoot in bursts. Deliberately crude: enough to test the feel, nothing
-  like the AI a real single-player mode needs.
+- **Four enemies** that warn each other by shouting, break for cover after firing
+  a burst, approach a lost contact from one side rather than straight on, sweep
+  the area where they last saw you, and get steadily more accurate the longer you
+  stay in their sights — so breaking line of sight resets their aim. Still simple
+  by the standards of a shipped game, but no longer a shooting gallery.
 - **Procedural everything** — all textures are drawn on a canvas and all sound is
   synthesised in the browser, including the muffling and ear-ring after a shot.
 
@@ -74,8 +77,11 @@ Tuning worth trying first, in order of how much they change the feel:
 | shots needed to kill | `src/weapon.js` | `MAX_HP`, `HEAD_DAMAGE`, `BODY_DAMAGE` |
 | field of view | `src/main.js` | `const FOV = 78` |
 | movement speed | `src/player.js` | `crouching ? 1.6 : ...` |
-| how deadly they are | `src/ai.js` | `let p = 0.28 *` |
-| how fast they notice you | `src/ai.js` | `let rate = 2.2 *` |
+| how deadly they are | `src/ai.js` | `const settle = 0.14 + 0.30 *` |
+| how fast they notice you | `src/ai.js` | `let rate = 2.6 *` |
+| how often they break for cover | `src/ai.js` | `Math.random() < 0.5` in `engage` |
+| how high you can climb | `src/player.js` | `VAULT_MAX`, `STEP_UP` |
+| doorway width | `src/map.js` | `const door = (at, width = 1.5)` |
 | room layout | `src/map.js` | the `wall(...)` calls |
 
 `window.__dbg` in the browser console exposes the player, enemies and map — try
@@ -84,5 +90,8 @@ Tuning worth trying first, in order of how much they change the feel:
 ## Known limits
 
 - Software-rendered testing here managed 8 fps; on a real GPU it will run fine.
-- Enemies do not path around obstacles, they slide along them.
+- Enemies steer around obstacles by sliding along them rather than pathfinding,
+  so they can still get hung up on an awkward corner.
+- Cover is chosen by sampling points and testing line of sight, not by a real
+  tactical map, so it occasionally picks somewhere odd.
 - One magazine of animation polish short of anything you would show off.

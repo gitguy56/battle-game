@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { MAX_HP } from './weapon.js';
 
-const RADIUS = 0.35;
+const RADIUS = 0.30;
 const H_STAND = 1.78;
 const H_CROUCH = 1.15;
-const STEP_UP = 0.4;
+const STEP_UP = 0.55;     // auto-step: kerbs, rubble, the lip of the shell hole
+const VAULT_MAX = 1.45;   // climbing: window sills, low walls, crate stacks
+const VAULT_H = 1.0;      // you duck while going through
 
 export class Player {
   constructor(map) {
@@ -19,6 +21,7 @@ export class Player {
     this.onGround = true;
     this.alive = true;
     this.hp = MAX_HP;            // two headshots, or four body shots
+    this.vaulting = 0;
     this.bobPhase = 0;
     this.bobAmount = 0;
     this.speed = 0;
@@ -49,6 +52,7 @@ export class Player {
 
   update(dt, input) {
     if (!this.alive) return;
+    this.vaulting = Math.max(0, this.vaulting - dt);
 
     // stance
     const wantCrouch = input.crouch;
@@ -59,6 +63,8 @@ export class Player {
       this.height += (targetH - this.height) * Math.min(1, dt * 12);
     }
     this.crouching = this.height < (H_STAND + H_CROUCH) / 2;
+
+    if (input.jump) this.tryVault();
 
     // intent
     const fwd = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
@@ -101,6 +107,36 @@ export class Player {
     const prev = this.bobPhase;
     this.bobPhase += dt * (4.2 + this.speed * 1.5);
     this.stepped = Math.floor(prev / Math.PI) !== Math.floor(this.bobPhase / Math.PI) && this.speed > 0.6;
+  }
+
+  // Climb through a window, the shell hole, or over a wall. The whole path has
+  // to be clear at the raised height, so you cannot vault through solid wall -
+  // only through an actual opening.
+  tryVault() {
+    if (!this.onGround || this.vaulting > 0) return false;
+    const fwd = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    // Only climb when something is actually in the way. Without this, holding
+    // the key in the open hops you forward across open ground.
+    const ahead = this.pos.clone().addScaledVector(fwd, 0.45);
+    if (!this.blocked(ahead)) return false;
+    for (let h = 0.45; h <= VAULT_MAX; h += 0.12) {
+      for (const reach of [1.0, 1.45]) {
+        let clear = true;
+        for (const t of [0.35, 0.6, 0.8, 1.0]) {
+          const probe = this.pos.clone().addScaledVector(fwd, reach * t);
+          probe.y += h;
+          if (this.blocked(probe, VAULT_H)) { clear = false; break; }
+        }
+        if (!clear) continue;
+        const dest = this.pos.clone().addScaledVector(fwd, reach);
+        dest.y += h;
+        this.pos.copy(dest);
+        this.vel.set(0, 0, 0);
+        this.vaulting = 0.35;
+        return true;
+      }
+    }
+    return false;
   }
 
   moveAxis(axis, d) {

@@ -78,31 +78,34 @@ export function buildMap(scene) {
       // frame the opening so it reads as a window or door, not a hole
       const fx = alongX ? s + o.at : fixed, fz = alongX ? fixed : s + o.at;
       const fw = alongX ? o.width + 0.26 : 0.16, fd = alongX ? 0.16 : o.width + 0.26;
-      add(box(fw, 0.11, fd, M.trim, fx, o.bottom, fz), false);
+      if (o.bottom > 0) add(box(fw, 0.11, fd, M.trim, fx, o.bottom, fz), false);
       if (o.top < h) add(box(fw, 0.11, fd, M.trim, fx, o.top, fz), false);
     }
     seg(cursor, len, 0, h);
   }
-  const win = at => ({ at, width: 1.2, bottom: 1.0, top: 2.2 });
-  const door = (at, width = 1.0) => ({ at, width, bottom: 0, top: 2.1 });
+  // Sills are low enough to climb through with Space.
+const win = at => ({ at, width: 1.3, bottom: 0.95, top: 2.25 });
+  const door = (at, width = 1.5) => ({ at, width, bottom: 0, top: 2.2 });
 
   // ---- house shell ----
-  wall(-HX, HZ, HX, HZ, M.out, [win(2), door(6, 1.1), win(10)]);
+  wall(-HX, HZ, HX, HZ, M.out, [win(2), door(6, 1.45), win(10)]);
   wall(-HX, -HZ, HX, -HZ, M.out,
-    [win(2), win(4.5), { at: 7.5, width: 1.6, bottom: 0.4, top: 2.1 }, win(10)]);
+    [win(2), door(4.5, 1.45), { at: 7.5, width: 1.9, bottom: 0.3, top: 2.5 }, win(10)]);
   wall(-HX, -HZ, -HX, HZ, M.out, [win(2.5), win(7.3)]);
   wall(HX, -HZ, HX, HZ, M.out, [win(2.5), win(7.3)]);
 
   wall(0, -HZ, 0, 1, M.in, [door(3)]);
   wall(-HX, 1, HX, 1, M.in, [door(4.5), door(7.5)]);
   wall(-2, 1, -2, HZ, M.in, [door(1.7)]);
+  wall(3, -1.5, 6, -1.5, M.in, [door(1.4)]);   // living-room alcove
   wall(2, 1, 2, HZ, M.in, [door(1.7)]);
 
   // exposed brick + rubble around the shell hole
   add(box(1.8, 0.28, 0.3, M.brick, 1.5, 2.24, -HZ), false);
   for (let i = 0; i < 8; i++) {
     add(box(0.32, 0.2, 0.26, M.brick,
-      1.5 + (Math.random() - 0.5) * 3, 0.1, -HZ - 0.7 - Math.random() * 1.5));
+      1.5 + (Math.random() < 0.5 ? -1 : 1) * (1.3 + Math.random() * 1.6),
+      0.1, -HZ - 0.7 - Math.random() * 1.5));
   }
 
   // ---- per-room floors, so you always know which room you are in ----
@@ -138,13 +141,13 @@ export function buildMap(scene) {
 
   // ---- furniture: cover, and something to break sightlines ----
   add(box(1.5, 1.9, 1.3, M.in, -4.6, 0.95, -3.2));     // stove
-  add(box(1.7, 0.85, 0.95, M.wood, -2.4, 0.42, -1.9)); // table
+  add(box(1.7, 0.85, 0.95, M.wood, -3.5, 0.42, -1.9)); // table
   add(box(0.9, 1.75, 0.5, M.wood, -5.4, 0.87, 0.2));   // dresser
-  add(box(2.1, 0.6, 0.95, M.wood, 3.7, 0.3, -2.7));    // couch
-  add(box(1.2, 0.75, 0.6, M.wood, 1.3, 0.37, -0.3));   // sideboard
+  add(box(2.1, 0.6, 0.95, M.wood, 3.0, 0.3, -3.3));    // couch
+  add(box(1.2, 0.75, 0.6, M.wood, 5.3, 0.37, 0.4));    // sideboard
   add(box(0.9, 1.8, 0.45, M.wood, 5.4, 0.9, -3.6));    // bookcase
-  add(box(1.9, 0.55, 1.05, M.wood, -4.4, 0.27, 3.3));  // bed 1
-  add(box(1.9, 0.55, 1.05, M.wood, 4.4, 0.27, 3.3));   // bed 2
+  add(box(1.9, 0.55, 1.05, M.wood, -4.7, 0.27, 3.6));  // bed 1
+  add(box(1.9, 0.55, 1.05, M.wood, 4.7, 0.27, 3.6));   // bed 2
   add(box(0.95, 0.8, 0.5, M.wood, 3.2, 0.4, 1.9));     // dresser
 
   // ---- barn: a second place to fight, with two ways in ----
@@ -170,6 +173,17 @@ export function buildMap(scene) {
   for (const [x, z] of [[-9, -1], [6, -8], [13, 5]]) {
     add(box(1.1, 0.9, 1.1, M.crate, x, 0.45, z));
     add(box(0.9, 0.8, 0.9, M.crate, x + 0.3, 1.25, z - 0.2));
+  }
+
+  // sandbags at the porch and a low wall in the north yard
+  for (let i = 0; i < 8; i++)
+    add(box(0.68, 0.3, 0.42, M.dark,
+      -3.4 + (i % 4) * 0.7, 0.15 + Math.floor(i / 4) * 0.3, HZ + 2.0));
+  add(box(6, 1.0, 0.5, M.stone, -2, 0.5, -9));
+  add(box(0.5, 1.0, 4, M.stone, 4.5, 0.5, -11));
+  for (const [x, z] of [[-6.5, -12], [8, -5]]) {
+    add(box(1.05, 0.9, 1.05, M.crate, x, 0.45, z));
+    add(box(0.9, 0.8, 0.9, M.crate, x + 0.25, 1.25, z - 0.15));
   }
 
   // ---- fence ----
@@ -216,6 +230,7 @@ export function buildMap(scene) {
       { pos: new THREE.Vector3(-3.5, 0, -3.0), patrol: [new THREE.Vector3(-3.5, 0, -3.0), new THREE.Vector3(-1.2, 0, -0.4)] },
       { pos: new THREE.Vector3(4.0, 0, -2.0), patrol: [new THREE.Vector3(4.0, 0, -2.0), new THREE.Vector3(3.2, 0, 2.4)] },
       { pos: new THREE.Vector3(BX + 2, 0, BZ), patrol: [new THREE.Vector3(BX + 2, 0, BZ), new THREE.Vector3(-7, 0, 4), new THREE.Vector3(2, 0, 8)] },
+      { pos: new THREE.Vector3(0, 0, -11), patrol: [new THREE.Vector3(0, 0, -11), new THREE.Vector3(-8, 0, -12), new THREE.Vector3(7, 0, -9)] },
     ],
   };
 }
