@@ -12,12 +12,18 @@ offline. Everything is in that one file.
 | sprint | `Shift` — costs stamina, cannot be held |
 | crouch | `C` — quieter, steadier, harder to spot |
 | fire | left mouse |
-| aim | right mouse — hold; there is no crosshair |
+| aim | right mouse — hold; tightens the crosshair |
 | reload | `R` — takes 2.8s, and you lose the partial magazine |
 | check magazine | `F` — gives a feel, not a number |
+| camera filter | `B` — toggle the bodycam look on or off |
 
-Two hits kill you. Two hits kill them. There is no health bar, no ammo counter,
-no hit markers and no minimap — see `../docs/REALISM.md` part 1 for why.
+**Two headshots or four body shots** — for them and for you. Four pips at the
+bottom of the screen are your health.
+
+The crosshair marks exactly where the shot goes, and its gap widens with your
+spread, so it shows how accurate the next round will be. This departs from
+`../docs/REALISM.md` part 1, which argues for removing the crosshair — that was
+the right call for a hardcore sim and the wrong one here.
 
 ## Why this is a web page and not Godot
 
@@ -31,14 +37,15 @@ transfers to Godot directly. The code does not, and is not meant to.
 
 ## What is in it
 
-- **Bodycam presentation** — wide distorted lens, chromatic aberration, sensor
-  grain that rises in shadow, shutter smear, compression blocks, dropped lines,
-  rolling scanline, vignette, and a camera that lags and overshoots your look
-  because it is strapped to a chest rather than a skull.
+- **Bodycam presentation, kept light** — a gently distorted lens, a little
+  chromatic aberration, fine grain and a soft vignette. Press `B` to switch it
+  off entirely. The camera tracks your look almost exactly; the heavy spring lag
+  it used to have read as the view "shifting" when you turned.
 - **Auto-exposure** — walk in through the front door and the camera hunts for
   exposure, exactly as a real one does. Stops down fast, opens up slowly.
-- **The house** — four rooms off a central corridor, porch, fenced plot, shed,
-  well, garden, shell hole punched through the back wall.
+- **The map** — a house of four rooms off a central corridor with a different
+  floor in each, a barn you can fight inside, stone walls, crates and barrels for
+  cover, a well, and a shell hole punched through the back wall.
 - **Three enemies** — patrol, notice you (faster if you are moving and standing),
   close, and shoot in bursts. Deliberately crude: enough to test the feel, nothing
   like the AI a real single-player mode needs.
@@ -58,13 +65,17 @@ Tuning worth trying first, in order of how much they change the feel:
 
 | Want | File | Look for |
 |---|---|---|
-| more or less lens distortion | `src/bodycam.js` | `float k = 0.16` |
-| more or less grain | `src/bodycam.js` | `0.040 + uShake` |
-| how hard the camera swings | `src/bodycam.js` | `const k = 62` |
-| how dark it gets indoors | `src/bodycam.js` | `indoor ? 1.62 : 1.0` |
-| movement speed | `src/player.js` | `crouching ? 1.25 : ...` |
-| how deadly it is | `src/ai.js` | `let p = 0.30 *` |
-| how fast they notice you | `src/ai.js` | `let rate = 2.6 *` |
+| how much camera movement at all | `src/bodycam.js` | `this.motion = 0.35` |
+| more or less lens distortion | `src/bodycam.js` | `float k = 0.035` |
+| more or less grain | `src/bodycam.js` | `0.012 + uShake` |
+| how tightly the camera tracks | `src/bodycam.js` | `const k = 420` |
+| how dark it gets indoors | `src/bodycam.js` | `indoor ? 1.55 : 1.0` |
+| accuracy | `src/weapon.js` | `let s = ads ? 0.0006 : 0.012` |
+| shots needed to kill | `src/weapon.js` | `MAX_HP`, `HEAD_DAMAGE`, `BODY_DAMAGE` |
+| field of view | `src/main.js` | `const FOV = 78` |
+| movement speed | `src/player.js` | `crouching ? 1.6 : ...` |
+| how deadly they are | `src/ai.js` | `let p = 0.28 *` |
+| how fast they notice you | `src/ai.js` | `let rate = 2.2 *` |
 | room layout | `src/map.js` | the `wall(...)` calls |
 
 `window.__dbg` in the browser console exposes the player, enemies and map — try
@@ -72,6 +83,6 @@ Tuning worth trying first, in order of how much they change the feel:
 
 ## Known limits
 
-- Software-rendered testing here managed 9 fps; on a real GPU it will run fine.
+- Software-rendered testing here managed 8 fps; on a real GPU it will run fine.
 - Enemies do not path around obstacles, they slide along them.
 - One magazine of animation polish short of anything you would show off.

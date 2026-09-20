@@ -35,7 +35,8 @@ scene.add(sun);
 const map = buildMap(scene);
 
 // A wide lens, as a bodycam has.
-const camera = new THREE.PerspectiveCamera(88, size()[0] / size()[1], 0.05, 400);
+const FOV = 78;
+const camera = new THREE.PerspectiveCamera(FOV, size()[0] / size()[1], 0.05, 400);
 scene.add(camera);
 
 const audio = new Audio();
@@ -63,6 +64,10 @@ addEventListener('keydown', e => {
   if (state !== 'playing') return;
   if (e.code === 'KeyR') weapon.startReload();
   if (e.code === 'KeyF') hud.say('magazine feels ' + weapon.magFeel());
+  if (e.code === 'KeyB') {
+    rig.filter = rig.filter > 0.5 ? 0 : 1;
+    hud.say('camera filter ' + (rig.filter ? 'on' : 'off'));
+  }
 });
 addEventListener('keyup', e => { if (KEYS[e.code] !== undefined) input[KEYS[e.code]] = 0; });
 
@@ -94,7 +99,7 @@ document.addEventListener('pointerlockchange', () => {
   if (locked && state === 'briefing') {
     state = 'playing';
     briefing.style.display = 'none';
-    hud.say('recording started');
+    hud.setHealth(player.hp);
   } else if (!locked && state === 'playing') {
     briefing.style.display = 'flex';
     briefing.querySelector('h1').textContent = 'PAUSED';
@@ -112,7 +117,7 @@ renderer.setSize(...size(), false);
 });
 
 // ----------------------------------------------------------------- loop ----
-let damage = 0, fade = 1, lastHits = 0, over = 0;
+let damage = 0, fade = 1, lastHp = player.hp, over = 0;
 const clock = new THREE.Clock();
 
 function enemyTracer(from, to) {
@@ -133,19 +138,20 @@ function tick() {
     player.update(dt, input);
     if (player.stepped) audio.step(player.speed > 3);
 
-    weapon.update(dt, input, player, enemies, map, origin => {
-      rig.addJolt(0.55);
+    weapon.update(dt, input, player, enemies, map, (origin, tag) => {
+      if (tag) { hud.markHit(tag === 'head'); return; }   // a shot connected
+      rig.addJolt(0.35);
       for (const e of enemies) e.hearShot(origin);
     });
 
     for (const e of enemies) e.update(dt, player, enemyTracer);
 
-    if (player.hits !== lastHits) {
-      lastHits = player.hits;
+    if (player.hp !== lastHp) {
+      lastHp = player.hp;
       damage = 1;
-      rig.addJolt(1.6);
+      rig.addJolt(1.2);
       audio.hurt();
-      hud.say(player.alive ? 'HIT - you can take one more' : '');
+      hud.setHealth(player.hp);
     }
 
     if (!player.alive && !over) {
@@ -165,18 +171,17 @@ function tick() {
   damage = Math.max(0, damage - dt * 1.4);
   fade += ((over === 1 ? 0.25 : 1) - fade) * Math.min(1, dt * 1.1);
 
-  const indoor = player.pos.x > -6.3 && player.pos.x < 6.3 &&
-                 player.pos.z > -4.8 && player.pos.z < 4.8 && player.pos.y < 2.6;
-  rig.update(dt, player, indoor);
-  hud.update(dt);
+  rig.update(dt, player, map.indoor(player.pos));
+  hud.showCrosshair(state === 'playing' && player.alive && !over);
+  hud.update(dt, weapon.spread, FOV, size()[1]);
 
   post.render(scene, camera, {
     time: performance.now() / 1000,
     shake: rig.shake,
     exposure: rig.exposure,
-    damage: Math.min(1, damage + (player.hits >= 1 && player.alive ? 0.18 : 0)),
+    damage: Math.min(1, damage + (player.alive ? (1 - player.hp / 4) * 0.22 : 0)),
     fade,
-    signal: 1,
+    filter: rig.filter,
   });
 }
 tick();

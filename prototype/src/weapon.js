@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 
 const MAG = 30;
+// Two headshots kill, four body shots kill - same for the player and the AI.
+export const MAX_HP = 4;
+export const HEAD_DAMAGE = 2;
+export const BODY_DAMAGE = 1;
+const UP = new THREE.Vector3(0, 1, 0);
 const RPM = 600;
 
 export class Weapon {
@@ -12,33 +17,38 @@ export class Weapon {
     this.kick = 0;
     this.tracers = [];
 
-    // Viewmodel: crude, but it only has to read as "a rifle" through the camera filter.
-    const dark = new THREE.MeshLambertMaterial({ color: 0x1e1e1c });
-    const furniture = new THREE.MeshLambertMaterial({ color: 0x4a3626 });
+    // Viewmodel. Lighter than the old one and held further from the lens, so
+    // it reads as a rifle instead of a black wedge in the corner.
+    const metal = new THREE.MeshLambertMaterial({ color: 0x43484e });
+    const metalDark = new THREE.MeshLambertMaterial({ color: 0x2f3338 });
+    const furniture = new THREE.MeshLambertMaterial({ color: 0x8a6741 });
     this.view = new THREE.Group();
-    const part = (w, h, d, mat, x, y, z) => {
+    const part = (w, h, d, mat, x, y, z, rx = 0) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-      m.position.set(x, y, z); this.view.add(m); return m;
+      m.position.set(x, y, z); m.rotation.x = rx;
+      this.view.add(m); return m;
     };
-    part(0.06, 0.07, 0.62, dark, 0, 0, -0.18);        // receiver
-    part(0.035, 0.035, 0.42, dark, 0, 0.005, -0.58);  // barrel
-    part(0.05, 0.05, 0.22, furniture, 0, -0.005, -0.42); // handguard
-    part(0.05, 0.16, 0.1, furniture, 0, -0.1, 0.02);  // grip
-    part(0.05, 0.09, 0.26, furniture, 0, -0.01, 0.2); // stock
-    const mag = part(0.045, 0.17, 0.09, dark, 0, -0.13, -0.16);
-    mag.rotation.x = 0.35;
+    part(0.062, 0.075, 0.30, metal, 0, 0, -0.10);        // receiver
+    part(0.030, 0.030, 0.40, metalDark, 0, 0.008, -0.44); // barrel
+    part(0.050, 0.052, 0.20, furniture, 0, -0.004, -0.31); // handguard
+    part(0.052, 0.030, 0.07, metalDark, 0, 0.042, -0.20);  // rear sight
+    part(0.016, 0.040, 0.03, metalDark, 0, 0.042, -0.62);  // front post
+    part(0.046, 0.15, 0.095, furniture, 0, -0.095, 0.01);  // pistol grip
+    part(0.048, 0.085, 0.26, furniture, 0, -0.012, 0.18);  // stock
+    part(0.042, 0.165, 0.085, metalDark, 0, -0.115, -0.09, 0.32); // magazine
     this.muzzle = new THREE.Object3D();
-    this.muzzle.position.set(0, 0.01, -0.78);
+    this.muzzle.position.set(0, 0.01, -0.64);
     this.view.add(this.muzzle);
     camera.add(this.view);
 
     this.flash = new THREE.PointLight(0xffd9a0, 0, 12, 2);
-    this.flash.position.set(0.2, -0.1, -0.8);
+    this.flash.position.set(0.14, -0.08, -0.66);
     camera.add(this.flash);
 
-    this.view.scale.setScalar(0.72);
-    this.restPos = new THREE.Vector3(0.30, -0.26, -0.14);
-    this.adsPos = new THREE.Vector3(0.02, -0.115, -0.2);
+    this.view.scale.setScalar(0.8);
+    this.view.rotation.y = -0.05;
+    this.restPos = new THREE.Vector3(0.155, -0.155, -0.30);
+    this.adsPos = new THREE.Vector3(0.0, -0.062, -0.26);
     this.view.position.copy(this.restPos);
   }
 
@@ -67,9 +77,11 @@ export class Weapon {
     this.kick *= Math.pow(0.001, dt);
 
     // accuracy: still and aimed is good, moving and hip-fired is not
-    let s = ads ? 0.004 : 0.03;
-    s += Math.min(player.speed / 4.6, 1) * (ads ? 0.02 : 0.045);
-    if (player.crouching) s *= 0.65;
+    // Cone half-angle in radians. Aimed and still is near-perfect: the shot
+    // goes exactly where the crosshair is.
+    let s = ads ? 0.0006 : 0.012;
+    s += Math.min(player.speed / 4.6, 1) * (ads ? 0.004 : 0.016);
+    if (player.crouching) s *= 0.6;
     this._spread = s;
 
     // recoil recovery
@@ -98,18 +110,25 @@ export class Weapon {
     this.cooldown = 60 / RPM;
     this.audio?.gunshot();
 
+    // Origin AND direction both come from the camera, so the shot goes exactly
+    // through the centre of the screen - which is where the crosshair is.
+    const origin = new THREE.Vector3();
     const dir = new THREE.Vector3();
+    this.camera.getWorldPosition(origin);
     this.camera.getWorldDirection(dir);
-    // cone of inaccuracy
+
+    // Scatter inside a proper cone rather than nudging the vector's components.
     const s = this._spread;
-    dir.x += (Math.random() - 0.5) * s * 2;
-    dir.y += (Math.random() - 0.5) * s * 2;
-    dir.z += (Math.random() - 0.5) * s * 2;
-    dir.normalize();
+    if (s > 0) {
+      const ang = Math.random() * Math.PI * 2;
+      const rad = Math.sqrt(Math.random()) * s;
+      const right = new THREE.Vector3().crossVectors(dir, UP).normalize();
+      const up = new THREE.Vector3().crossVectors(right, dir).normalize();
+      dir.addScaledVector(right, Math.cos(ang) * rad)
+         .addScaledVector(up, Math.sin(ang) * rad).normalize();
+    }
 
-    const origin = player.eye.clone();
     const ray = new THREE.Raycaster(origin, dir, 0.1, 300);
-
     const targets = [...map.solids];
     for (const e of enemies) if (e.alive) targets.push(...e.hitMeshes);
     const hits = ray.intersectObjects(targets, false);
@@ -119,19 +138,23 @@ export class Weapon {
       const h = hits[0];
       end = h.point.clone();
       const owner = h.object.userData.enemy;
-      if (owner) owner.takeHit(h.object.userData.part === 'head' ? 2 : 1, this.audio);
-      else this.impact(h.point, h.face?.normal);
+      if (owner) {
+        const head = h.object.userData.part === 'head';
+        owner.takeHit(head ? HEAD_DAMAGE : BODY_DAMAGE, this.audio);
+        onShot?.(origin, head ? 'head' : 'body');
+      } else {
+        this.impact(h.point, h.face?.normal);
+      }
     }
-    this.tracer(origin.clone().addScaledVector(dir, 0.6), end);
+    this.tracer(origin.clone().addScaledVector(dir, 0.5), end);
 
-    // recoil, partly random so it cannot be learned perfectly
-    this.recoilPitch += 0.016 + Math.random() * 0.01;
-    this.recoilYaw += (Math.random() - 0.5) * 0.012;
-    player.pitch += this.recoilPitch * 0.9;
-    player.yaw += this.recoilYaw * 0.9;
+    this.recoilPitch += 0.009 + Math.random() * 0.005;
+    this.recoilYaw += (Math.random() - 0.5) * 0.006;
+    player.pitch += this.recoilPitch * 0.85;
+    player.yaw += this.recoilYaw * 0.85;
     this.kick = 1;
-    this.flash.intensity = 6;
-    onShot?.(origin);
+    this.flash.intensity = 5;
+    onShot?.(origin, null);
   }
 
   tracer(a, b) {

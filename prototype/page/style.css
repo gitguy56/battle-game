@@ -20,6 +20,28 @@
   .bc-cell::after { content: ""; position: absolute; right: -4px; top: 3px; width: 2px;
     height: 5px; background: #e8e8e8; }
 
+  /* Crosshair. The centre of the screen is exactly where the shot goes, and
+     the gap opens up as your spread widens. */
+  #bc-cross { position: absolute; left: 50%; top: 50%; width: 0; height: 0;
+    --gap: 4px; transition: opacity .2s; }
+  #bc-cross i { position: absolute; background: #fff; opacity: .92;
+    box-shadow: 0 0 2px rgba(0,0,0,.9); transition: transform .06s linear; }
+  .ch-u, .ch-d { width: 1.5px; height: 6px; left: -0.75px; }
+  .ch-l, .ch-r { width: 6px; height: 1.5px; top: -0.75px; }
+  .ch-u { bottom: var(--gap); } .ch-d { top: var(--gap); }
+  .ch-l { right: var(--gap); }  .ch-r { left: var(--gap); }
+  #bc-hit { position: absolute; left: -7px; top: -9px; width: 14px;
+    font-size: 15px; line-height: 1; text-align: center; opacity: 0;
+    transition: opacity .18s; font-weight: 700; }
+  #bc-hit::before { content: "\00d7"; }
+
+  /* Health. Four pips: two headshots or four body shots. */
+  #bc-hp { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
+    display: flex; gap: 5px; }
+  #bc-hp i { width: 26px; height: 4px; background: #eaeaea; opacity: .9;
+    box-shadow: 0 0 3px rgba(0,0,0,.8); transition: background .2s, opacity .2s; }
+  #bc-hp i.off { background: #6a2018; opacity: .45; }
+
   #bc-msg { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%);
     color: #f0f0f0; font-size: 14px; opacity: 0; transition: opacity .35s;
     text-shadow: 0 2px 6px #000; white-space: nowrap; }

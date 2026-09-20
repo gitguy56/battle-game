@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MAX_HP } from './weapon.js';
 
 const RADIUS = 0.35;
 const H_STAND = 1.78;
@@ -17,7 +18,7 @@ export class Player {
     this.stamina = 1;
     this.onGround = true;
     this.alive = true;
-    this.hits = 0;               // two hits and you are done
+    this.hp = MAX_HP;            // two headshots, or four body shots
     this.bobPhase = 0;
     this.bobAmount = 0;
     this.speed = 0;
@@ -72,7 +73,7 @@ export class Player {
 
     // Deliberately slow. Sprinting costs stamina and cannot be held.
     const canSprint = input.sprint && !this.crouching && this.stamina > 0.05 && input.fwd;
-    let spd = this.crouching ? 1.25 : (canSprint ? 4.6 : 2.5);
+    let spd = this.crouching ? 1.6 : (canSprint ? 5.2 : 3.1);
     if (input.ads) spd *= 0.55;
 
     if (canSprint && moving) this.stamina = Math.max(0, this.stamina - dt * 0.28);
@@ -80,7 +81,7 @@ export class Player {
     if (this.stamina < 0.2) spd *= 0.75 + this.stamina;
 
     const target = wish.multiplyScalar(spd);
-    const accel = this.onGround ? 11 : 2;
+    const accel = this.onGround ? 18 : 2.5;
     this.vel.x += (target.x - this.vel.x) * Math.min(1, dt * accel);
     this.vel.z += (target.z - this.vel.z) * Math.min(1, dt * accel);
 
@@ -133,10 +134,10 @@ export class Player {
     this.vel.y = 0;
   }
 
-  takeHit() {
+  takeHit(damage = 1) {
     if (!this.alive) return false;
-    this.hits++;
-    if (this.hits >= 2) { this.alive = false; return true; }
+    this.hp -= damage;
+    if (this.hp <= 0) { this.hp = 0; this.alive = false; return true; }
     return false;
   }
 }
