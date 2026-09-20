@@ -226,6 +226,17 @@ const win = at => ({ at, width: 1.3, bottom: 0.95, top: 2.25 });
     houseBounds: new THREE.Box3(new THREE.Vector3(-HX, 0, -HZ), new THREE.Vector3(HX, WALL_H, HZ)),
     indoor: p => (p.x > -6.3 && p.x < 6.3 && p.z > -4.8 && p.z < 4.8 && p.y < 2.6) ||
                  (p.x > BX - 4 && p.x < BX + 4 && p.z > BZ - 3.4 && p.z < BZ + 3.4 && p.y < 3.1),
+    // Footsteps should tell you what you are walking on.
+    surfaceAt: p => {
+      if (p.x > BX - 3.6 && p.x < BX + 3.6 && p.z > BZ - 3.1 && p.z < BZ + 3.1) return 'concrete';
+      if (p.x > -HX && p.x < HX && p.z > -HZ && p.z < HZ) {
+        if (p.z < 1) return p.x < 0 ? 'tile' : 'wood';   // kitchen tile, living boards
+        return Math.abs(p.x) < 2 ? 'wood' : 'tile';      // corridor boards, bedrooms tile
+      }
+      if (Math.abs(p.x) < 1.1 && p.z > 6 && p.z < 17) return 'concrete';   // the path
+      if (p.z > HZ && p.z < HZ + 2.2 && Math.abs(p.x) < 2.4) return 'concrete'; // porch
+      return 'grass';
+    },
     enemyPosts: [
       { pos: new THREE.Vector3(-3.5, 0, -3.0), patrol: [new THREE.Vector3(-3.5, 0, -3.0), new THREE.Vector3(-1.2, 0, -0.4)] },
       { pos: new THREE.Vector3(4.0, 0, -2.0), patrol: [new THREE.Vector3(4.0, 0, -2.0), new THREE.Vector3(3.2, 0, 2.4)] },

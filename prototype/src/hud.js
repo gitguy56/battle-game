@@ -20,6 +20,7 @@ export class HUD {
       <div id="bc-obj"><span id="bc-obj-text"></span><span id="bc-obj-count"></span></div>
       <div id="bc-banner"></div>
       <div id="bc-prompt"></div>
+      <div id="bc-dmg"><i></i></div>
       <div id="bc-msg"></div>
       <div id="bc-center"></div>`;
     this.rec = root.querySelector('#bc-rec');
@@ -35,6 +36,8 @@ export class HUD {
     this.objCount = root.querySelector('#bc-obj-count');
     this.banner = root.querySelector('#bc-banner');
     this.prompt = root.querySelector('#bc-prompt');
+    this.dmgArc = root.querySelector('#bc-dmg');
+    this.dmgTimer = 0;
     this.weapon = root.querySelector('#bc-weapon');
     this.pips = [];
     this.maxHp = 0;
@@ -81,6 +84,14 @@ export class HUD {
     this.weapon.title = name;
   }
 
+  // Which way the shot came from. With half a dozen enemies you otherwise have
+  // no idea where to look.
+  showDamageFrom(angleRad) {
+    this.dmgArc.style.transform = `rotate(${angleRad}rad)`;
+    this.dmgArc.style.opacity = '1';
+    this.dmgTimer = 1.5;
+  }
+
   setPrompt(text) {
     this.prompt.innerHTML = text || '';
     this.prompt.style.opacity = text ? '1' : '0';
@@ -123,6 +134,10 @@ export class HUD {
     if (this.msgTimer > 0 && (this.msgTimer -= dt) <= 0) this.msg.style.opacity = '0';
     if (this.hitTimer > 0 && (this.hitTimer -= dt) <= 0) this.hit.style.opacity = '0';
     if (this.bannerTimer > 0 && (this.bannerTimer -= dt) <= 0) this.banner.style.opacity = '0';
+    if (this.dmgTimer > 0) {
+      this.dmgTimer -= dt;
+      this.dmgArc.style.opacity = Math.max(0, this.dmgTimer / 1.5).toFixed(2);
+    }
   }
 
   bigText(html) { this.center.innerHTML = html; this.center.style.opacity = '1'; }

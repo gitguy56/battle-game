@@ -61,7 +61,7 @@ scene.add(exfilMark);
 let mission = null;
 let state = 'menu';
 let stats = { shots: 0, hits: 0, kills: 0, time: 0 };
-let damage = 0, fade = 1, lastHp = 0, endTimer = 0;
+let damage = 0, fade = 1, lastHp = 0, endTimer = 0, thumpTimer = 14;
 
 // --------------------------------------------------------------- settings ---
 function applySettings() {
@@ -198,10 +198,32 @@ ui.show('menu');
 hud.setVisible(false);
 
 // ------------------------------------------------------------------- loop ---
-function enemyTracer(from, to) {
-  // flash at their muzzle so you can see where fire is coming from
+// Where a point sits left-to-right relative to where the player is facing.
+function panFor(pos) {
+  const rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
+  const dx = pos.x - player.pos.x, dz = pos.z - player.pos.z;
+  const d = Math.hypot(dx, dz) || 1;
+  return (dx * rx + dz * rz) / d;
+}
+
+// Bearing of a point relative to the way the player is looking: 0 is straight
+// ahead, positive to the right.
+function bearingTo(pos) {
+  const dx = pos.x - player.pos.x, dz = pos.z - player.pos.z;
+  const fwd = dx * -Math.sin(player.yaw) + dz * -Math.cos(player.yaw);
+  const right = dx * Math.cos(player.yaw) + dz * -Math.sin(player.yaw);
+  return Math.atan2(right, fwd);
+}
+
+function enemyTracer(from, to, enemy) {
   const dir = to.clone().sub(from).normalize();
   effects.muzzle(from.clone().addScaledVector(dir, 0.35), dir);
+  if (enemy) {
+    const pan = panFor(enemy.pos);
+    audio.gunshotAt(enemy.pos, player.pos, WEAPONS[enemy.type.weapon].sound, pan);
+    // a round going past your head - the clearest cue that you are being shot at
+    if (enemy.lastShotMiss > 0.45) audio.whizz(enemy.lastShotMiss, pan);
+  }
   const j = new THREE.Vector3((Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.0, (Math.random() - 0.5) * 1.6);
   const g = new THREE.BufferGeometry().setFromPoints([from, to.clone().add(j)]);
   const m = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xffd090, transparent: true, opacity: 0.9 }));
@@ -217,7 +239,7 @@ function tick() {
   if (state === 'playing') {
     stats.time += dt;
     player.update(dt, input);
-    if (player.stepped) audio.step(player.speed > 3);
+    if (player.stepped) audio.step(map.surfaceAt(player.pos), player.speed > 3);
 
     weapon.update(dt, input, player, mission.enemies, map, (origin, tag) => {
       stats.shots++;
@@ -226,7 +248,11 @@ function tick() {
       for (const e of mission.enemies) e.hearShot(origin);
     });
 
-    for (const e of mission.enemies) e.update(dt, player, enemyTracer);
+    for (const e of mission.enemies) {
+      e.update(dt, player, enemyTracer);
+      if (e.justAlerted) { e.justAlerted = false; audio.alert(panFor(e.pos)); }
+      if (e.justDied) { e.justDied = false; audio.bodyfall(panFor(e.pos)); }
+    }
     mission.update(dt, player);
     stats.kills = mission.enemies.reduce((n, e) => n + (e.alive ? 0 : 1), 0);
 
@@ -236,6 +262,7 @@ function tick() {
       rig.addJolt(1.2);
       audio.hurt();
       hud.setHealth(player.hp, player.maxHp);
+      if (player.lastHitFrom) hud.showDamageFrom(bearingTo(player.lastHitFrom));
     }
     if (mission.banner && mission.banner.life > 3.3) hud.showBanner(mission.objective);
 
@@ -251,6 +278,10 @@ function tick() {
     exfilMark.visible = mission.phase === PHASE.EXFIL;
     hud.setObjective(mission.objective,
       mission.phase === PHASE.EXFIL || mission.phase === PHASE.DONE ? null : mission.alive);
+
+    // Distant artillery, so the fight sits inside a bigger war.
+    thumpTimer -= dt;
+    if (thumpTimer <= 0) { audio.distantThump(); thumpTimer = 14 + Math.random() * 26; }
 
     if (!player.alive) { endTimer += dt; if (endTimer > 2.2) endRound(false); }
     else if (mission.phase === PHASE.DONE) { endTimer += dt; if (endTimer > 1.4) endRound(true); }
@@ -280,6 +311,7 @@ tick();
 // smoke tests drive it without a mouse.
 window.__dbg = {
   player, weapon, rig, map, scene, renderer, input, settings, ui, hud, pickups, effects,
+  audioRef: audio,
   get enemies() { return mission ? mission.enemies : []; },
   get mission() { return mission; },
   get state() { return state; },

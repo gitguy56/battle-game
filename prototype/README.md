@@ -100,8 +100,15 @@ they apply live.
   the area where they last saw you, and get steadily more accurate the longer you
   stay in their sights — so breaking line of sight resets their aim. Still simple
   by the standards of a shipped game, but no longer a shooting gallery.
-- **Procedural everything** — all textures are drawn on a canvas and all sound is
-  synthesised in the browser, including the muffling and ear-ring after a shot.
+- **Sound, all synthesised in the browser** — no audio files. Each weapon has its
+  own voice; other people's shots are panned to their side and delayed by the
+  distance; rounds that miss crack past your head; footsteps change with the
+  surface underfoot; someone who spots you shouts; bodies hit the ground; and
+  distant artillery rumbles somewhere else in the war. A shot close by muffles
+  everything and leaves your ears ringing.
+- **A damage direction indicator**, because with half a dozen enemies you
+  otherwise have no idea which way to turn.
+- **Procedural textures** too, drawn on a canvas at load.
 
 ## Editing it
 
@@ -128,6 +135,8 @@ Tuning worth trying first, in order of how much they change the feel:
 | movement speed | `src/player.js` | `crouching ? 1.6 : ...` |
 | how deadly they are | `src/ai.js` | `const settle = 0.14 + 0.30 *` |
 | how fast they notice you | `src/ai.js` | `let rate = 2.6 *` |
+| how loud the ambience is | `src/audio.js` | `startAmbient`, `g.gain.value` |
+| footstep character | `src/audio.js` | `SURFACES` |
 | how often they break for cover | `src/ai.js` | `Math.random() < 0.5` in `engage` |
 | how high you can climb | `src/player.js` | `VAULT_MAX`, `STEP_UP` |
 | doorway width | `src/map.js` | `const door = (at, width = 1.5)` |

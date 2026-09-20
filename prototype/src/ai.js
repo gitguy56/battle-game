@@ -148,7 +148,10 @@ export class Enemy {
     }
 
     if (this.awareness >= 1) {
-      if (this.state !== 'engage') this.aimTimer = 0.3 + Math.random() * 0.35;
+      if (this.state !== 'engage') {
+        this.aimTimer = 0.3 + Math.random() * 0.35;
+        this.justAlerted = true;          // main plays a shout
+      }
       this.state = 'engage';
     } else if (this.lastKnown && this.awareness > 0.25) {
       this.state = 'search';
@@ -280,9 +283,6 @@ export class Enemy {
       }
     }
 
-    this.audio?.gunshotAt(this.pos, player.pos, WEAPONS[K.weapon].sound);
-    onEnemyShot?.(this.eye, player.eye);
-
     // Accuracy ramps as they settle on you, and resets when you break line of
     // sight. Standing still in the open is what gets you killed.
     const settle = 0.14 + 0.30 * Math.min(this.aimTime / 2.0, 1);
@@ -291,10 +291,16 @@ export class Enemy {
     if (player.speed > 3) p *= 0.7;
     if (this.coverTarget) p *= 0.5;            // shooting on the move is poor
     p *= this.accuracyScale;                   // difficulty
+    const w = WEAPONS[K.weapon];
     if (Math.random() < p) {
-      const w = WEAPONS[K.weapon];
-      player.takeHit(Math.random() < 0.15 ? w.head : w.body);
+      player.takeHit(Math.random() < 0.15 ? w.head : w.body, this.pos);
+      this.lastShotMiss = 0;
+    } else {
+      // How near it went. Biased by how good the shot was, so a dangerous
+      // enemy sounds dangerous.
+      this.lastShotMiss = Math.min(1, Math.random() * (0.35 + p * 4));
     }
+    onEnemyShot?.(this.eye, player.eye, this);
   }
 
   search(dt) {
@@ -367,6 +373,7 @@ export class Enemy {
       for (const m of this.hitMeshes) m.userData.enemy = null;
       if (this.weaponModel) this.group.remove(this.weaponModel);
       this.dropped = { id: this.type.weapon, pos: this.pos.clone() };
+      this.justDied = true;
     }
   }
 }

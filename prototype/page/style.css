@@ -46,6 +46,12 @@
     transition: opacity .18s; font-weight: 700; }
   #bc-hit::before { content: "\00d7"; }
 
+  /* Direction the last shot came from */
+  #bc-dmg { position: absolute; left: 50%; top: 50%; width: 0; height: 0; opacity: 0; }
+  #bc-dmg i { position: absolute; left: -46px; top: -150px; width: 92px; height: 22px;
+    background: radial-gradient(60% 100% at 50% 100%, rgba(255,60,40,.85), rgba(255,60,40,0));
+    transform-origin: 50% 150px; }
+
   /* Health. Four pips: two headshots or four body shots. */
   #bc-hp { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
     display: flex; gap: 5px; }

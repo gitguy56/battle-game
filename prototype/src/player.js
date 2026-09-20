@@ -28,6 +28,7 @@ export class Player {
     this.speed = 0;
     this.lastStep = 0;
     this.stepped = false;
+    this.lastHitFrom = null;
   }
 
   reset(maxHp = MAX_HP) {
@@ -186,8 +187,9 @@ export class Player {
     this.vel.y = 0;
   }
 
-  takeHit(damage = 1) {
+  takeHit(damage = 1, fromPos = null) {
     if (!this.alive) return false;
+    if (fromPos) this.lastHitFrom = fromPos.clone ? fromPos.clone() : { ...fromPos };
     this.hp -= damage;
     if (this.hp <= 0) { this.hp = 0; this.alive = false; return true; }
     return false;
