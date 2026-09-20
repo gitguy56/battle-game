@@ -72,24 +72,37 @@ export class Audio {
     o.start(t); o.stop(t + dur + 0.02);
   }
 
-  gunshot() {
+  // Each weapon passes its own voice: crack, body and thump frequencies.
+  gunshot(s) {
     if (!this.ctx) return;
-    this.burst({ dur: 0.09, freq: 4200, type: 'bandpass', q: 0.4, gain: 0.85 }); // crack
-    this.burst({ dur: 0.30, freq: 900, type: 'lowpass', gain: 0.55 });           // body
-    this.tone({ f0: 160, f1: 45, dur: 0.14, gain: 0.5 });                        // thump
-    this.burst({ dur: 0.9, freq: 700, type: 'lowpass', gain: 0.12, delay: 0.04 }); // tail
-    this.deafen(0.55);
+    const v = s || { crack: 4200, body: 900, thump: 160, gain: 0.85 };
+    const g = v.gain;
+    this.burst({ dur: 0.09, freq: v.crack, type: 'bandpass', q: 0.4, gain: 0.85 * g });
+    this.burst({ dur: 0.30, freq: v.body, type: 'lowpass', gain: 0.55 * g });
+    this.tone({ f0: v.thump, f1: 45, dur: 0.14, gain: 0.5 * g });
+    this.burst({ dur: 0.9, freq: 700, type: 'lowpass', gain: 0.12 * g, delay: 0.04 });
+    this.deafen(0.5 * g);
+  }
+
+  swap() {
+    this.burst({ dur: 0.05, freq: 1800, type: 'bandpass', q: 2, gain: 0.25 });
+    this.burst({ dur: 0.05, freq: 2600, type: 'bandpass', q: 3, gain: 0.22, delay: 0.16 });
+  }
+
+  pickup() {
+    this.tone({ f0: 520, f1: 760, dur: 0.1, gain: 0.22, type: 'triangle' });
+    this.burst({ dur: 0.06, freq: 2200, type: 'bandpass', q: 2, gain: 0.2, delay: 0.05 });
   }
 
   // A shot from somewhere else on the map: quieter, duller, arrives late.
-  gunshotAt(from, to) {
+  gunshotAt(from, to, voice) {
     if (!this.ctx) return;
-    const dx = from.x - to.x, dz = from.z - to.z;
-    const dist = Math.hypot(dx, dz);
-    const atten = Math.max(0.04, 1 - dist / 60);
+    const v = voice || { crack: 2600, body: 800, gain: 1 };
+    const dist = Math.hypot(from.x - to.x, from.z - to.z);
+    const atten = Math.max(0.04, 1 - dist / 60) * (v.gain ?? 1);
     const delay = Math.min(0.35, dist / 343);
-    this.burst({ dur: 0.10, freq: 2600 * atten + 500, type: 'bandpass', q: 0.5, gain: 0.5 * atten, delay });
-    this.burst({ dur: 0.45, freq: 400 + 400 * atten, type: 'lowpass', gain: 0.4 * atten, delay });
+    this.burst({ dur: 0.10, freq: v.crack * 0.6 * atten + 500, type: 'bandpass', q: 0.5, gain: 0.5 * atten, delay });
+    this.burst({ dur: 0.45, freq: 400 + v.body * 0.45 * atten, type: 'lowpass', gain: 0.4 * atten, delay });
     this.tone({ f0: 120, f1: 40, dur: 0.2, gain: 0.3 * atten, delay });
   }
 
@@ -114,10 +127,12 @@ export class Audio {
     this.burst({ dur: 0.2, freq: 300, type: 'lowpass', gain: 0.7 });
     this.deafen(0.8);
   }
-  reload() {
-    this.burst({ dur: 0.05, freq: 2600, type: 'bandpass', q: 3, gain: 0.3, delay: 0.05 });
-    this.burst({ dur: 0.06, freq: 1800, type: 'bandpass', q: 2, gain: 0.3, delay: 0.9 });
-    this.burst({ dur: 0.05, freq: 3200, type: 'bandpass', q: 3, gain: 0.35, delay: 1.9 });
-    this.burst({ dur: 0.07, freq: 2200, type: 'bandpass', q: 2, gain: 0.4, delay: 2.45 });
+  // Clicks spread across however long this weapon takes to reload.
+  reload(duration = 2.8) {
+    const at = f => duration * f;
+    this.burst({ dur: 0.05, freq: 2600, type: 'bandpass', q: 3, gain: 0.3, delay: at(0.03) });
+    this.burst({ dur: 0.06, freq: 1800, type: 'bandpass', q: 2, gain: 0.3, delay: at(0.32) });
+    this.burst({ dur: 0.05, freq: 3200, type: 'bandpass', q: 3, gain: 0.35, delay: at(0.68) });
+    this.burst({ dur: 0.07, freq: 2200, type: 'bandpass', q: 2, gain: 0.4, delay: at(0.88) });
   }
 }

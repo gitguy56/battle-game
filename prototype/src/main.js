@@ -8,6 +8,8 @@ import { HUD } from './hud.js';
 import { UI } from './ui.js';
 import { Settings } from './settings.js';
 import { Mission, PHASE } from './mission.js';
+import { Pickups } from './pickups.js';
+import { WEAPONS } from './weapons.js';
 
 // ------------------------------------------------------------------ setup ---
 const canvas = document.getElementById('game');
@@ -44,6 +46,7 @@ const player = new Player(map);
 const weapon = new Weapon(camera, scene, audio);
 const rig = new BodycamRig(camera);
 const post = new PostFX(renderer);
+const pickups = new Pickups(scene);
 
 // Marks where to fall back to once the compound is secure.
 const exfilMark = new THREE.Mesh(
@@ -83,6 +86,8 @@ addEventListener('keydown', e => {
   if (KEYS[e.code] !== undefined) { input[KEYS[e.code]] = 1; e.preventDefault(); }
   if (state !== 'playing') return;
   if (e.code === 'KeyR') weapon.startReload();
+  if (e.code === 'KeyQ' || e.code === 'Digit1' || e.code === 'Digit2') weapon.swap();
+  if (e.code === 'KeyE') tryPickUp();
   if (e.code === 'KeyF') hud.say('magazine feels ' + weapon.magFeel());
   if (e.code === 'KeyB') {
     settings.set('filter', settings.get('filter') ? 0 : 1);
@@ -122,13 +127,24 @@ addEventListener('resize', () => {
 });
 
 // ------------------------------------------------------------------- flow ---
+function tryPickUp() {
+  const it = pickups.nearest(player);
+  if (!it) return;
+  const old = weapon.pickUp(it.id, it.mag, it.reserve);
+  pickups.take(it);
+  if (old) pickups.drop(old.id, player.pos, old.mag, old.reserve);
+  audio.pickup();
+  hud.say('picked up ' + WEAPONS[it.id].name);
+}
+
 function startMission() {
   mission?.dispose();
+  pickups.clear();
   const diff = settings.difficulty;
   player.reset(diff.playerHp);
-  weapon.reset();
+  weapon.reset([{ id: 'rifle' }, { id: 'pistol' }]);
   rig.yaw = player.yaw; rig.pitch = player.pitch;
-  mission = new Mission(scene, map, audio, diff);
+  mission = new Mission(scene, map, audio, diff, pickups);
   mission.start();
   stats = { shots: 0, hits: 0, kills: 0, time: 0 };
   damage = 0; fade = 1; endTimer = 0;
@@ -217,6 +233,15 @@ function tick() {
     }
     if (mission.banner && mission.banner.life > 3.3) hud.showBanner(mission.objective);
 
+    const near = pickups.nearest(player);
+    hud.setPrompt(near ? `<b>E</b> ${WEAPONS[near.id].name}` : '');
+    hud.setWeapon(weapon.spec.short, weapon.spec.name, weapon.mag, weapon.reserve,
+      weapon.reloading > 0);
+
+    // Sights magnify by however much this weapon's optic is worth.
+    const want = settings.get('fov') * weapon.adsFov;
+    if (Math.abs(camera.fov - want) > 0.01) { camera.fov = want; camera.updateProjectionMatrix(); }
+
     exfilMark.visible = mission.phase === PHASE.EXFIL;
     hud.setObjective(mission.objective,
       mission.phase === PHASE.EXFIL || mission.phase === PHASE.DONE ? null : mission.alive);
@@ -247,7 +272,7 @@ tick();
 // Debug hook: poke at the game from the browser console, and let the automated
 // smoke tests drive it without a mouse.
 window.__dbg = {
-  player, weapon, rig, map, scene, renderer, input, settings, ui, hud,
+  player, weapon, rig, map, scene, renderer, input, settings, ui, hud, pickups,
   get enemies() { return mission ? mission.enemies : []; },
   get mission() { return mission; },
   get state() { return state; },

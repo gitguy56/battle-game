@@ -13,7 +13,17 @@
   .bc-tl { top: 18px; left: 22px; }
   .bc-tr { top: 18px; right: 22px; }
   .bc-bl { bottom: 18px; left: 22px; }
-  .bc-br { bottom: 18px; right: 22px; font-size: 11px; opacity: .55 !important; }
+  .bc-br { bottom: 18px; right: 22px; font-size: 12px; opacity: .9 !important;
+    display: flex; align-items: baseline; gap: 9px; }
+  #bc-weapon b { font-weight: 600; letter-spacing: .14em; }
+  #bc-weapon .ammo { font-variant-numeric: tabular-nums; font-size: 17px; letter-spacing: .02em; }
+  #bc-weapon .ammo i { font-style: normal; font-size: 11px; opacity: .5; }
+  #bc-weapon .rl { font-size: 11px; opacity: .6; letter-spacing: .12em; }
+  #bc-prompt { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%);
+    font-size: 12px; letter-spacing: .1em; color: #fff; opacity: 0; transition: opacity .18s;
+    text-shadow: 0 2px 6px #000; white-space: nowrap; }
+  #bc-prompt b { display: inline-block; border: 1px solid rgba(255,255,255,.5);
+    padding: 1px 6px; margin-right: 6px; font-weight: 600; }
   #bc-rec { color: #ff3b30; font-size: 15px; }
   .bc-cell { display: inline-block; width: 22px; height: 11px; border: 1.5px solid #e8e8e8;
     border-radius: 2px; position: relative; vertical-align: -1px; margin-left: 3px; }

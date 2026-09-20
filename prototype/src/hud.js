@@ -10,7 +10,7 @@ export class HUD {
         <div class="bc-tl"><span id="bc-rec">&#9679;</span> REC</div>
         <div class="bc-tr"><span id="bc-batt">87%</span></div>
         <div class="bc-bl" id="bc-time">--:--:--</div>
-        <div class="bc-br">UNIT 2-1</div>
+        <div class="bc-br" id="bc-weapon"></div>
       </div>
       <div id="bc-cross">
         <i class="ch-u"></i><i class="ch-d"></i><i class="ch-l"></i><i class="ch-r"></i>
@@ -19,6 +19,7 @@ export class HUD {
       <div id="bc-hp"></div>
       <div id="bc-obj"><span id="bc-obj-text"></span><span id="bc-obj-count"></span></div>
       <div id="bc-banner"></div>
+      <div id="bc-prompt"></div>
       <div id="bc-msg"></div>
       <div id="bc-center"></div>`;
     this.rec = root.querySelector('#bc-rec');
@@ -33,6 +34,8 @@ export class HUD {
     this.objText = root.querySelector('#bc-obj-text');
     this.objCount = root.querySelector('#bc-obj-count');
     this.banner = root.querySelector('#bc-banner');
+    this.prompt = root.querySelector('#bc-prompt');
+    this.weapon = root.querySelector('#bc-weapon');
     this.pips = [];
     this.maxHp = 0;
     this.buildPips(MAX_HP);
@@ -67,6 +70,20 @@ export class HUD {
   setHealth(hp, maxHp) {
     if (maxHp) this.buildPips(maxHp);
     this.pips.forEach((p, i) => p.classList.toggle('off', i >= hp));
+  }
+
+  // With five weapons in play, hiding the count is obstruction rather than
+  // realism - you cannot choose between guns you cannot read.
+  setWeapon(short, name, mag, reserve, reloading) {
+    this.weapon.innerHTML = reloading
+      ? `<b>${short}</b> <span class="rl">reloading</span>`
+      : `<b>${short}</b> <span class="ammo">${mag}<i>/${reserve}</i></span>`;
+    this.weapon.title = name;
+  }
+
+  setPrompt(text) {
+    this.prompt.innerHTML = text || '';
+    this.prompt.style.opacity = text ? '1' : '0';
   }
 
   setObjective(text, count) {

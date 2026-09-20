@@ -25,7 +25,9 @@ they are, and how many hits you can take.
 | climb / vault | `Space` — through windows, the shell hole, over walls |
 | fire | left mouse |
 | aim | right mouse — hold; tightens the crosshair |
-| reload | `R` — takes 2.8s, and you lose the partial magazine |
+| reload | `R` |
+| swap weapon | `Q` — primary / sidearm |
+| pick up | `E` — take a weapon off the ground |
 | check magazine | `F` — gives a feel, not a number |
 | camera filter | `B` — toggle the bodycam look on or off |
 | pause | `Esc` — settings, restart, quit |
@@ -47,6 +49,34 @@ it by double-clicking rather than installing an engine first.
 It is a **feel test**. What it answers — how the bodycam should look, how heavy
 movement should be, how fast fights should end, how the house should be laid out —
 transfers to Godot directly. The code does not, and is not meant to.
+
+## Weapons
+
+Five, all defined as data in `src/weapons.js`, so a new one is a table entry
+rather than new code. You carry a primary and a sidearm, and can take anything
+off the ground with `E`.
+
+| | Rounds | Rate | Head / body | Notes |
+|---|---|---|---|---|
+| Assault rifle | 30 | 600 rpm | 2 / 1 | The all-rounder |
+| Submachine gun | 32 | 900 rpm | 2 / 1 | Vicious close, scatters at range |
+| Pump shotgun | 7 | 75 rpm | 9 pellets | Lethal in a doorway, useless across the yard |
+| Marksman rifle | 10 | 240 rpm | 4 / 2 | A headshot kills outright; 4.5x optic |
+| Sidearm | 15 | 420 rpm | 2 / 1 | What you fall back on |
+
+"Head / body" is damage against 4 health, so 2 / 1 means two headshots or four
+body shots.
+
+## Enemy types
+
+Each carries a different weapon and wants to fight at a different distance:
+
+- **Rifleman** — the baseline; takes cover readily
+- **Rusher** — submachine gun, closes fast, rarely bothers with cover
+- **Marksman** — marksman rifle, hangs back at 25m+, accurate, patient
+- **Shotgunner** — tougher, charges you, deadly inside a room
+
+Kill one and the weapon they were carrying lands on the ground.
 
 ## Settings
 

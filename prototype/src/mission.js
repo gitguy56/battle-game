@@ -6,25 +6,33 @@ import { Enemy } from './ai.js';
 // not.
 export const PHASE = { ASSAULT: 'assault', COUNTER: 'counter', EXFIL: 'exfil', DONE: 'done' };
 
+// Ordered so the first few (used on Recruit) are a fair mix, and the later
+// additions on harder settings are the nastier types.
 const GARRISON_POSTS = [
   { pos: [-3.5, 0, -3.0], patrol: [[-3.5, 0, -3.0], [-1.2, 0, -0.4]], kind: 'rifleman' },
-  { pos: [4.0, 0, -2.0],  patrol: [[4.0, 0, -2.0], [3.2, 0, 2.4]],    kind: 'rifleman' },
+  { pos: [4.0, 0, -2.0],  patrol: [[4.0, 0, -2.0], [3.2, 0, 2.4]],    kind: 'shotgunner' },
   { pos: [-11, 0, -6],    patrol: [[-11, 0, -6], [-7, 0, 4], [2, 0, 8]], kind: 'rifleman' },
+  { pos: [12, 0, -10],    patrol: [[12, 0, -10], [13, 0, -2]],        kind: 'marksman' },
   { pos: [0, 0, -11],     patrol: [[0, 0, -11], [-8, 0, -12], [7, 0, -9]], kind: 'rifleman' },
-  { pos: [9, 0, 6],       patrol: [[9, 0, 6], [12, 0, -4], [6, 0, -9]],  kind: 'rifleman' },
+  { pos: [9, 0, 6],       patrol: [[9, 0, 6], [12, 0, -4], [6, 0, -9]],  kind: 'rusher' },
   { pos: [-4.7, 0, 3.3],  patrol: [[-4.7, 0, 3.3], [-1, 0, 3.0]],       kind: 'rifleman' },
-  { pos: [4.5, 0, -3.5],  patrol: [[4.5, 0, -3.5], [5.2, 0, 0.2]],      kind: 'rifleman' },
-  { pos: [-13, 0, -7],    patrol: [[-13, 0, -7], [-14, 0, -2]],         kind: 'rifleman' },
+  { pos: [-15, 0, 10],    patrol: [[-15, 0, 10], [-15, 0, 2]],          kind: 'marksman' },
 ];
 
 // The counter-attack comes down the road, so it arrives behind you.
 const COUNTER_SPAWNS = [
-  [-6, 0, 24], [2, 0, 26], [9, 0, 24], [-12, 0, 22], [14, 0, 23], [-2, 0, 28],
+  { pos: [-6, 0, 24], kind: 'rusher' },
+  { pos: [2, 0, 26],  kind: 'rifleman' },
+  { pos: [9, 0, 24],  kind: 'shotgunner' },
+  { pos: [-12, 0, 22], kind: 'rifleman' },
+  { pos: [14, 0, 23], kind: 'rusher' },
+  { pos: [-2, 0, 28], kind: 'marksman' },
 ];
 
 export class Mission {
-  constructor(scene, map, audio, difficulty) {
+  constructor(scene, map, audio, difficulty, pickups) {
     this.scene = scene; this.map = map; this.audio = audio; this.diff = difficulty;
+    this.pickups = pickups;
     this.enemies = [];
     this.phase = PHASE.ASSAULT;
     this.time = 0;
@@ -64,6 +72,11 @@ export class Mission {
 
   update(dt, player) {
     this.time += dt;
+
+    // Anyone who just died leaves their weapon on the ground.
+    for (const e of this.enemies) {
+      if (e.dropped) { this.pickups?.drop(e.dropped.id, e.dropped.pos); e.dropped = null; }
+    }
     if (this.banner) {
       this.banner.life -= dt;
       if (this.banner.life <= 0) this.banner = null;
@@ -71,7 +84,7 @@ export class Mission {
 
     if (this.phase === PHASE.ASSAULT && this.alive === 0) {
       this.counterQueue = COUNTER_SPAWNS.slice(0, this.diff.counter).map((s, i) => ({
-        pos: s, at: 2.5 + i * 2.2,
+        pos: s.pos, kind: s.kind, at: 2.5 + i * 2.2,
       }));
       this.counterTimer = 0;
       this.setPhase(PHASE.COUNTER, 'Counter-attack inbound - hold the compound');
@@ -79,7 +92,7 @@ export class Mission {
       this.counterTimer += dt;
       while (this.counterQueue.length && this.counterQueue[0].at <= this.counterTimer) {
         const s = this.counterQueue.shift();
-        const e = this.spawn({ pos: s.pos, patrol: [s.pos, [0, 0, 6]] });
+        const e = this.spawn({ pos: s.pos, kind: s.kind, patrol: [s.pos, [0, 0, 6]] });
         e.awareness = 0.9;              // they arrive already looking for you
         e.lastKnown = player.pos.clone();
       }

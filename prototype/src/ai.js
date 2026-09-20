@@ -1,20 +1,47 @@
 import * as THREE from 'three';
 import { MAX_HP } from './weapon.js';
+import { WEAPONS, buildModel } from './weapons.js';
 
 // Deliberately simple: see, close, shoot. Enough to test whether the game feels
 // right, nowhere near the combat AI a finished single-player mode would need.
 const SEE_RANGE = 45;
 const FOV_COS = Math.cos(THREE.MathUtils.degToRad(58));
 
+// Enemy types. Each carries a different weapon, wants to fight at a different
+// distance, and falls off in accuracy at a different rate.
+export const KINDS = {
+  rifleman: {
+    weapon: 'rifle', hp: MAX_HP, speed: 2.0, preferred: 13, rangeFall: 45,
+    burst: [2, 4], cadence: [0.75, 1.5], acc: 1.0, cover: 0.5,
+    uniform: 0x5c6b43, gear: 0x3b4230,
+  },
+  rusher: {
+    weapon: 'smg', hp: MAX_HP, speed: 3.1, preferred: 4, rangeFall: 24,
+    burst: [4, 7], cadence: [0.5, 1.0], acc: 0.85, cover: 0.2,
+    uniform: 0x4a5340, gear: 0x30352a,
+  },
+  marksman: {
+    weapon: 'dmr', hp: MAX_HP, speed: 1.5, preferred: 26, rangeFall: 75,
+    burst: [1, 1], cadence: [1.5, 2.6], acc: 1.5, cover: 0.75,
+    uniform: 0x54603f, gear: 0x2f3a2b,
+  },
+  shotgunner: {
+    weapon: 'shotgun', hp: MAX_HP + 1, speed: 2.9, preferred: 3.5, rangeFall: 13,
+    burst: [1, 1], cadence: [1.0, 1.7], acc: 1.2, cover: 0.25,
+    uniform: 0x63614a, gear: 0x3a382c,
+  },
+};
+
 export class Enemy {
   constructor(scene, post, map, audio, kind = 'rifleman') {
     this.scene = scene; this.map = map; this.audio = audio;
     this.kind = kind;
+    this.type = KINDS[kind] || KINDS.rifleman;
     this.accuracyScale = 1;
     this.pos = post.pos.clone();
     this.patrol = post.patrol.map(p => p.clone());
     this.leg = 0; this.yaw = 0;
-    this.hp = MAX_HP;
+    this.hp = this.type.hp;
     this.alive = true;
     this.state = 'patrol';
     this.awareness = 0;
@@ -27,8 +54,8 @@ export class Enemy {
     this.coverCooldown = 0;
     this.flank = Math.random() < 0.5 ? -1 : 1;
 
-    const uniform = new THREE.MeshLambertMaterial({ color: 0x5c6b43 });
-    const gear = new THREE.MeshLambertMaterial({ color: 0x3b4230 });
+    const uniform = new THREE.MeshLambertMaterial({ color: this.type.uniform });
+    const gear = new THREE.MeshLambertMaterial({ color: this.type.gear });
     const skin = new THREE.MeshLambertMaterial({ color: 0xb08a68 });
     const steel = new THREE.MeshLambertMaterial({ color: 0x2b2a27 });
 
@@ -178,8 +205,8 @@ export class Enemy {
         const goal = this.lastKnown.clone().addScaledVector(perp, this.flank * 4);
         this.moveTowards(this.freeAt(goal) ? goal : this.lastKnown, dt, 2.2);
       }
-    } else if (d > 22) {
-      this.moveTowards(player.pos, dt, 2.1);
+    } else if (d > this.type.preferred) {
+      this.moveTowards(player.pos, dt, this.type.speed);
     }
 
     if (!visible) return;
@@ -187,30 +214,35 @@ export class Enemy {
     this.aimTimer -= dt;
     if (this.aimTimer > 0 || this.shotCooldown > 0) return;
 
-    if (this.burst <= 0) this.burst = 2 + Math.floor(Math.random() * 3);
+    const K = this.type;
+    if (this.burst <= 0) this.burst = K.burst[0] + Math.floor(Math.random() * (K.burst[1] - K.burst[0] + 1));
     this.burst--;
-    this.shotCooldown = this.burst > 0 ? 0.11 : 0.75 + Math.random() * 0.7;
+    const gap = K.cadence[0] + Math.random() * (K.cadence[1] - K.cadence[0]);
+    this.shotCooldown = this.burst > 0 ? 60 / (WEAPONS[K.weapon].rpm) : gap;
     if (this.burst <= 0) {
       this.aimTimer = 0.2 + Math.random() * 0.3;
       // having fired, displace to somewhere the player is not already aiming
-      if (this.coverCooldown <= 0 && Math.random() < 0.5) {
+      if (this.coverCooldown <= 0 && Math.random() < K.cover) {
         this.coverTarget = this.findCover(player);
         this.coverCooldown = 3.5;
       }
     }
 
-    this.audio?.gunshotAt(this.pos, player.pos);
+    this.audio?.gunshotAt(this.pos, player.pos, WEAPONS[K.weapon].sound);
     onEnemyShot?.(this.eye, player.eye);
 
     // Accuracy ramps as they settle on you, and resets when you break line of
     // sight. Standing still in the open is what gets you killed.
     const settle = 0.14 + 0.30 * Math.min(this.aimTime / 2.0, 1);
-    let p = settle * (1 - Math.min(d / 45, 0.78));
+    let p = settle * (1 - Math.min(d / K.rangeFall, 0.82)) * K.acc;
     if (player.crouching) p *= 0.78;
     if (player.speed > 3) p *= 0.7;
     if (this.coverTarget) p *= 0.5;            // shooting on the move is poor
-    p *= this.accuracyScale;   // difficulty
-    if (Math.random() < p) player.takeHit(Math.random() < 0.15 ? 2 : 1);
+    p *= this.accuracyScale;                   // difficulty
+    if (Math.random() < p) {
+      const w = WEAPONS[K.weapon];
+      player.takeHit(Math.random() < 0.15 ? w.head : w.body);
+    }
   }
 
   search(dt) {
@@ -226,7 +258,7 @@ export class Enemy {
     if (this.patrol.length < 2) return;
     const t = this.patrol[this.leg];
     if (this.pos.distanceTo(t) < 0.7) this.leg = (this.leg + 1) % this.patrol.length;
-    this.moveTowards(t, dt, 1.2);
+    this.moveTowards(t, dt, this.type.speed * 0.55);
   }
 
   faceTo(dir, dt, rate) {
@@ -275,6 +307,8 @@ export class Enemy {
       this.group.rotation.x = -Math.PI / 2.1;
       this.group.position.y = 0.3;
       for (const m of this.hitMeshes) m.userData.enemy = null;
+      if (this.weaponModel) this.group.remove(this.weaponModel);
+      this.dropped = { id: this.type.weapon, pos: this.pos.clone() };
     }
   }
 }
