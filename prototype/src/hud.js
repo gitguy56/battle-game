@@ -4,6 +4,7 @@ import { MAX_HP } from './weapon.js';
 // pips, and brief feedback when a shot connects.
 export class HUD {
   constructor(root) {
+    this.root = root;
     root.innerHTML = `
       <div id="bc-frame">
         <div class="bc-tl"><span id="bc-rec">&#9679;</span> REC</div>
@@ -16,6 +17,8 @@ export class HUD {
         <b id="bc-hit"></b>
       </div>
       <div id="bc-hp"></div>
+      <div id="bc-obj"><span id="bc-obj-text"></span><span id="bc-obj-count"></span></div>
+      <div id="bc-banner"></div>
       <div id="bc-msg"></div>
       <div id="bc-center"></div>`;
     this.rec = root.querySelector('#bc-rec');
@@ -27,13 +30,13 @@ export class HUD {
     this.hit = root.querySelector('#bc-hit');
     this.hpBox = root.querySelector('#bc-hp');
 
+    this.objText = root.querySelector('#bc-obj-text');
+    this.objCount = root.querySelector('#bc-obj-count');
+    this.banner = root.querySelector('#bc-banner');
     this.pips = [];
-    for (let i = 0; i < MAX_HP; i++) {
-      const p = document.createElement('i');
-      this.hpBox.appendChild(p);
-      this.pips.push(p);
-    }
-    this.t = 0; this.battery = 87; this.msgTimer = 0; this.hitTimer = 0;
+    this.maxHp = 0;
+    this.buildPips(MAX_HP);
+    this.t = 0; this.battery = 87; this.msgTimer = 0; this.hitTimer = 0; this.bannerTimer = 0;
   }
 
   say(text, seconds = 2.2) {
@@ -49,8 +52,36 @@ export class HUD {
     this.hitTimer = 0.22;
   }
 
-  setHealth(hp) {
+  buildPips(n) {
+    if (this.maxHp === n) return;
+    this.maxHp = n;
+    this.hpBox.innerHTML = '';
+    this.pips = [];
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement('i');
+      this.hpBox.appendChild(p);
+      this.pips.push(p);
+    }
+  }
+
+  setHealth(hp, maxHp) {
+    if (maxHp) this.buildPips(maxHp);
     this.pips.forEach((p, i) => p.classList.toggle('off', i >= hp));
+  }
+
+  setObjective(text, count) {
+    this.objText.textContent = text || '';
+    this.objCount.textContent = count == null ? '' : count;
+  }
+
+  showBanner(text) {
+    this.banner.textContent = text;
+    this.banner.style.opacity = '1';
+    this.bannerTimer = 3.2;
+  }
+
+  setVisible(on) {
+    this.root.style.opacity = on ? '1' : '0';
   }
 
   showCrosshair(on) { this.cross.style.opacity = on ? '1' : '0'; }
@@ -74,6 +105,7 @@ export class HUD {
 
     if (this.msgTimer > 0 && (this.msgTimer -= dt) <= 0) this.msg.style.opacity = '0';
     if (this.hitTimer > 0 && (this.hitTimer -= dt) <= 0) this.hit.style.opacity = '0';
+    if (this.bannerTimer > 0 && (this.bannerTimer -= dt) <= 0) this.banner.style.opacity = '0';
   }
 
   bigText(html) { this.center.innerHTML = html; this.center.style.opacity = '1'; }

@@ -20,6 +20,7 @@ export class Player {
     this.stamina = 1;
     this.onGround = true;
     this.alive = true;
+    this.maxHp = MAX_HP;
     this.hp = MAX_HP;            // two headshots, or four body shots
     this.vaulting = 0;
     this.bobPhase = 0;
@@ -27,6 +28,21 @@ export class Player {
     this.speed = 0;
     this.lastStep = 0;
     this.stepped = false;
+  }
+
+  reset(maxHp = MAX_HP) {
+    this.pos.copy(this.map.playerSpawn);
+    this.vel.set(0, 0, 0);
+    this.yaw = 0; this.pitch = 0;
+    this.height = H_STAND;
+    this.crouching = false;
+    this.stamina = 1;
+    this.maxHp = maxHp;
+    this.hp = maxHp;
+    this.alive = true;
+    this.onGround = true;
+    this.vaulting = 0;
+    this.bobPhase = 0; this.bobAmount = 0; this.speed = 0;
   }
 
   get eye() {

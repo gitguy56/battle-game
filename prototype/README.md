@@ -6,6 +6,17 @@ a chest-mounted camera.
 **To play: double-click `bodycam-prototype.html`.** No install, no server, works
 offline. Everything is in that one file.
 
+## The mission
+
+Three phases, so the round has a shape:
+
+1. **Assault** — clear the garrison from the compound.
+2. **Counter-attack** — they come back down the road, behind you. Hold.
+3. **Exfil** — fall back to the marked circle on the road.
+
+Difficulty sets how many defenders there are, how many come back, how accurate
+they are, and how many hits you can take.
+
 | | |
 |---|---|
 | move | `W A S D` |
@@ -17,6 +28,7 @@ offline. Everything is in that one file.
 | reload | `R` — takes 2.8s, and you lose the partial magazine |
 | check magazine | `F` — gives a feel, not a number |
 | camera filter | `B` — toggle the bodycam look on or off |
+| pause | `Esc` — settings, restart, quit |
 
 **Two headshots or four body shots** — for them and for you. Four pips at the
 bottom of the screen are your health.
@@ -35,6 +47,12 @@ it by double-clicking rather than installing an engine first.
 It is a **feel test**. What it answers — how the bodycam should look, how heavy
 movement should be, how fast fights should end, how the house should be laid out —
 transfers to Godot directly. The code does not, and is not meant to.
+
+## Settings
+
+Mouse sensitivity, field of view, volume, camera filter and inverted aim, all
+remembered between sessions. Reachable from the menu or the pause screen, and
+they apply live.
 
 ## What is in it
 
@@ -75,7 +93,8 @@ Tuning worth trying first, in order of how much they change the feel:
 | how dark it gets indoors | `src/bodycam.js` | `indoor ? 1.55 : 1.0` |
 | accuracy | `src/weapon.js` | `let s = ads ? 0.0006 : 0.012` |
 | shots needed to kill | `src/weapon.js` | `MAX_HP`, `HEAD_DAMAGE`, `BODY_DAMAGE` |
-| field of view | `src/main.js` | `const FOV = 78` |
+| difficulty numbers | `src/settings.js` | `DIFFICULTIES` |
+| mission phases and spawns | `src/mission.js` | `GARRISON_POSTS`, `COUNTER_SPAWNS` |
 | movement speed | `src/player.js` | `crouching ? 1.6 : ...` |
 | how deadly they are | `src/ai.js` | `const settle = 0.14 + 0.30 *` |
 | how fast they notice you | `src/ai.js` | `let rate = 2.6 *` |

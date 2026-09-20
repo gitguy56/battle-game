@@ -5,6 +5,7 @@
   #game { display: block; width: 100%; height: 100%; cursor: crosshair; }
 
   #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10;
+         transition: opacity .3s;
          text-transform: uppercase; letter-spacing: 0.08em; }
   #bc-frame { position: absolute; inset: 0; }
   #bc-frame > div { position: absolute; font-size: 13px; color: #e8e8e8;
@@ -52,14 +53,57 @@
   #bc-center b { font-size: 34px; letter-spacing: .22em; font-weight: 600; }
   #bc-center span { font-size: 13px; opacity: .6; letter-spacing: .14em; }
 
-  #briefing { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 22px; background: #070807;
-    color: #d8d8d8; text-align: center; padding: 24px; cursor: pointer; }
-  #briefing h1 { font-size: 26px; letter-spacing: .3em; font-weight: 600; }
-  #briefing .sub { font-size: 12px; opacity: .5; letter-spacing: .2em; text-transform: uppercase; }
-  #briefing table { font-size: 13px; line-height: 2; opacity: .8; border-spacing: 26px 0; }
-  #briefing td:first-child { text-align: right; color: #7f8f7f; white-space: nowrap; }
-  #briefing td:last-child { text-align: left; }
-  #bc-start { font-size: 13px; letter-spacing: .2em; text-transform: uppercase;
-    border: 1px solid #3a463a; padding: 12px 26px; opacity: .85; }
-  #briefing .note { font-size: 11px; opacity: .35; max-width: 460px; line-height: 1.8; }
+  /* Objective strip and phase banner */
+  #bc-obj { position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px; font-size: 12px; color: #e9e9e9;
+    opacity: .85; text-shadow: 0 1px 3px #000; }
+  #bc-obj-count:not(:empty) { background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.22);
+    padding: 1px 7px; font-size: 11px; }
+  #bc-banner { position: absolute; top: 33%; left: 50%; transform: translateX(-50%);
+    font-size: 19px; letter-spacing: .16em; color: #fff; opacity: 0;
+    transition: opacity .5s; text-shadow: 0 2px 10px #000; white-space: nowrap;
+    text-align: center; max-width: 92vw; }
+
+  /* ---- menus ---- */
+  #ui { position: fixed; inset: 0; z-index: 30; display: none;
+    background: radial-gradient(120% 90% at 50% 40%, #12161a 0%, #05070a 100%);
+    color: #dfe3e2; overflow-y: auto; }
+  #ui.on { display: block; }
+  #ui .screen { display: none; min-height: 100%; align-items: center; justify-content: center;
+    padding: 32px 16px; }
+  #ui .screen.on { display: flex; }
+  #ui .panel { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 22px; }
+  #ui h1 { font-size: 30px; letter-spacing: .34em; font-weight: 600; text-transform: uppercase; }
+  #ui h2 { font-size: 20px; letter-spacing: .24em; font-weight: 600; text-transform: uppercase; }
+  #ui .sub { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; opacity: .45;
+    margin-top: -14px; }
+  #ui .hint { font-size: 11.5px; line-height: 1.7; opacity: .42; }
+
+  #ui .rows { display: flex; flex-direction: column; gap: 12px; }
+  #ui .row { display: grid; grid-template-columns: 1fr auto; align-items: center;
+    gap: 6px 14px; font-size: 12.5px; }
+  #ui .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: #6f9c6a;
+    height: 18px; }
+  #ui .lbl { letter-spacing: .1em; text-transform: uppercase; font-size: 11px; opacity: .72; }
+  #ui output { font-size: 11px; opacity: .5; text-align: right; }
+  #ui .choice { gap: 8px; }
+  #ui .choice .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  #ui button { font: inherit; font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: #dfe3e2; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.16);
+    padding: 12px 20px; cursor: pointer; transition: background .15s, border-color .15s; }
+  #ui button:hover { background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.32); }
+  #ui button:focus-visible { outline: 2px solid #6f9c6a; outline-offset: 2px; }
+  #ui button.primary { background: #3f5c3c; border-color: #6f9c6a; }
+  #ui button.primary:hover { background: #4d6f49; }
+  #ui .chip { padding: 7px 14px; font-size: 11px; }
+  #ui .chip.on { background: #3f5c3c; border-color: #6f9c6a; }
+  #ui .acts { display: flex; gap: 10px; flex-wrap: wrap; }
+  #ui .acts.col { flex-direction: column; }
+  #ui .acts button { flex: 1 1 auto; }
+
+  #ui .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  #ui .stats div { border: 1px solid rgba(255,255,255,.12); padding: 14px;
+    display: flex; flex-direction: column; gap: 4px; }
+  #ui .stats b { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #ui .stats span { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; opacity: .45; }

@@ -2,11 +2,14 @@ import * as THREE from 'three';
 import { buildMap } from './map.js';
 import { Player } from './player.js';
 import { Weapon } from './weapon.js';
-import { Enemy } from './ai.js';
 import { BodycamRig, PostFX } from './bodycam.js';
 import { Audio } from './audio.js';
 import { HUD } from './hud.js';
+import { UI } from './ui.js';
+import { Settings } from './settings.js';
+import { Mission, PHASE } from './mission.js';
 
+// ------------------------------------------------------------------ setup ---
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
@@ -14,42 +17,58 @@ const size = () => [canvas.clientWidth || innerWidth, canvas.clientHeight || inn
 renderer.setSize(...size(), false);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.NoToneMapping; // done in the bodycam shader instead
+renderer.toneMapping = THREE.NoToneMapping;
 
 const scene = new THREE.Scene();
-const SKY = new THREE.Color(0x7d868c);      // overcast: flat light is forgiving
+const SKY = new THREE.Color(0x7d868c);
 scene.background = SKY;
 scene.fog = new THREE.FogExp2(0x7d868c, 0.011);
-
-const hemi = new THREE.HemisphereLight(0xc2ced6, 0x5a5142, 2.0);
-scene.add(hemi);
+scene.add(new THREE.HemisphereLight(0xc2ced6, 0x5a5142, 2.0));
 const sun = new THREE.DirectionalLight(0xe8ece8, 2.6);
 sun.position.set(-22, 30, 14);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-const sc = sun.shadow.camera;
-sc.left = -34; sc.right = 34; sc.top = 34; sc.bottom = -34; sc.near = 1; sc.far = 90;
+Object.assign(sun.shadow.camera, { left: -38, right: 38, top: 38, bottom: -38, near: 1, far: 95 });
 sun.shadow.bias = -0.0009;
 scene.add(sun);
 
 const map = buildMap(scene);
-
-// A wide lens, as a bodycam has.
-const FOV = 78;
-const camera = new THREE.PerspectiveCamera(FOV, size()[0] / size()[1], 0.05, 400);
+const settings = new Settings();
+const camera = new THREE.PerspectiveCamera(settings.get('fov'), size()[0] / size()[1], 0.05, 400);
 scene.add(camera);
 
 const audio = new Audio();
 const hud = new HUD(document.getElementById('hud'));
+const ui = new UI(document.getElementById('ui'), settings);
 const player = new Player(map);
 const weapon = new Weapon(camera, scene, audio);
 const rig = new BodycamRig(camera);
 const post = new PostFX(renderer);
 
-const enemies = map.enemyPosts.map(p => new Enemy(scene, p, map, audio));
-for (const e of enemies) e.squad = enemies;
+// Marks where to fall back to once the compound is secure.
+const exfilMark = new THREE.Mesh(
+  new THREE.CylinderGeometry(3.2, 3.2, 0.06, 20),
+  new THREE.MeshBasicMaterial({ color: 0x5fd08a, transparent: true, opacity: 0.35 }));
+exfilMark.position.set(0, 0.05, 21);
+exfilMark.visible = false;
+scene.add(exfilMark);
 
-// ---------------------------------------------------------------- input ----
+let mission = null;
+let state = 'menu';
+let stats = { shots: 0, hits: 0, kills: 0, time: 0 };
+let damage = 0, fade = 1, lastHp = 0, endTimer = 0;
+
+// --------------------------------------------------------------- settings ---
+function applySettings() {
+  camera.fov = settings.get('fov');
+  camera.updateProjectionMatrix();
+  rig.filter = settings.get('filter') ? 1 : 0;
+  audio.setVolume(settings.get('volume'));
+}
+ui.on.apply = applySettings;
+applySettings();
+
+// ------------------------------------------------------------------ input ---
 const input = { fwd: 0, back: 0, left: 0, right: 0, sprint: 0, crouch: 0, fire: 0, ads: 0, jump: 0 };
 const KEYS = {
   KeyW: 'fwd', KeyS: 'back', KeyA: 'left', KeyD: 'right',
@@ -57,22 +76,21 @@ const KEYS = {
   ShiftLeft: 'sprint', ShiftRight: 'sprint', KeyC: 'crouch', ControlLeft: 'crouch',
   Space: 'jump',
 };
-
-let state = 'briefing';
-const briefing = document.getElementById('briefing');
+const clearInput = () => { for (const k in input) input[k] = 0; };
 
 addEventListener('keydown', e => {
+  if (e.code === 'Escape') { if (state === 'playing') pause(); return; }
   if (KEYS[e.code] !== undefined) { input[KEYS[e.code]] = 1; e.preventDefault(); }
   if (state !== 'playing') return;
   if (e.code === 'KeyR') weapon.startReload();
   if (e.code === 'KeyF') hud.say('magazine feels ' + weapon.magFeel());
   if (e.code === 'KeyB') {
-    rig.filter = rig.filter > 0.5 ? 0 : 1;
-    hud.say('camera filter ' + (rig.filter ? 'on' : 'off'));
+    settings.set('filter', settings.get('filter') ? 0 : 1);
+    applySettings();
+    hud.say('camera filter ' + (settings.get('filter') ? 'on' : 'off'));
   }
 });
 addEventListener('keyup', e => { if (KEYS[e.code] !== undefined) input[KEYS[e.code]] = 0; });
-
 canvas.addEventListener('mousedown', e => {
   if (document.pointerLockElement !== canvas) return;
   if (e.button === 0) input.fire = 1;
@@ -83,116 +101,157 @@ addEventListener('mouseup', e => {
   if (e.button === 2) input.ads = 0;
 });
 addEventListener('contextmenu', e => e.preventDefault());
-
 addEventListener('mousemove', e => {
   if (document.pointerLockElement !== canvas || state !== 'playing') return;
-  player.look(e.movementX * 0.0022, e.movementY * 0.0022);
+  const s = settings.get('sensitivity');
+  player.look(e.movementX * s, e.movementY * s * (settings.get('invertY') ? -1 : 1));
 });
-
-function start() {
-  canvas.requestPointerLock();
-  audio.resume();
-}
-briefing.addEventListener('click', start);
-canvas.addEventListener('click', () => { if (state === 'playing') canvas.requestPointerLock(); else start(); });
-
+canvas.addEventListener('click', () => {
+  if (state === 'playing' && document.pointerLockElement !== canvas) canvas.requestPointerLock();
+});
 document.addEventListener('pointerlockchange', () => {
-  const locked = document.pointerLockElement === canvas;
-  if (locked && state === 'briefing') {
-    state = 'playing';
-    briefing.style.display = 'none';
-    hud.setHealth(player.hp);
-  } else if (!locked && state === 'playing') {
-    briefing.style.display = 'flex';
-    briefing.querySelector('h1').textContent = 'PAUSED';
-    briefing.querySelector('#bc-start').textContent = 'click to resume';
-    state = 'briefing';
-  }
+  if (document.pointerLockElement !== canvas && state === 'playing') pause();
 });
 
 addEventListener('resize', () => {
-  const size = () => [canvas.clientWidth || innerWidth, canvas.clientHeight || innerHeight];
-renderer.setSize(...size(), false);
-  camera.aspect = innerWidth / innerHeight;
+  const [w, h] = size();
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  post.setSize(innerWidth, innerHeight);
+  post.setSize(w, h);
 });
 
-// ----------------------------------------------------------------- loop ----
-let damage = 0, fade = 1, lastHp = player.hp, over = 0;
-const clock = new THREE.Clock();
+// ------------------------------------------------------------------- flow ---
+function startMission() {
+  mission?.dispose();
+  const diff = settings.difficulty;
+  player.reset(diff.playerHp);
+  weapon.reset();
+  rig.yaw = player.yaw; rig.pitch = player.pitch;
+  mission = new Mission(scene, map, audio, diff);
+  mission.start();
+  stats = { shots: 0, hits: 0, kills: 0, time: 0 };
+  damage = 0; fade = 1; endTimer = 0;
+  lastHp = player.hp;
+  exfilMark.visible = false;
+  hud.setHealth(player.hp, player.maxHp);
+  hud.setVisible(true);
+  hud.showBanner(mission.objective);
+  state = 'playing';
+  ui.show(null);
+  audio.resume();
+  canvas.requestPointerLock();
+}
+function pause() {
+  if (state !== 'playing') return;
+  state = 'paused';
+  clearInput();
+  document.exitPointerLock();
+  ui.show('pause');
+}
+function resume() {
+  if (state !== 'paused') return;
+  state = 'playing';
+  ui.show(null);
+  canvas.requestPointerLock();
+}
+function toMenu() {
+  state = 'menu';
+  clearInput();
+  document.exitPointerLock();
+  hud.setVisible(false);
+  ui.show('menu');
+}
+function endRound(win) {
+  if (state === 'results') return;
+  state = 'results';
+  clearInput();
+  document.exitPointerLock();
+  hud.setVisible(false);
+  ui.setResults({ ...stats, win });
+  ui.show('results');
+}
+ui.on.play = startMission;
+ui.on.restart = startMission;
+ui.on.resume = resume;
+ui.on.quit = toMenu;
+ui.show('menu');
+hud.setVisible(false);
 
+// ------------------------------------------------------------------- loop ---
 function enemyTracer(from, to) {
-  const jitter = new THREE.Vector3(
-    (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.0, (Math.random() - 0.5) * 1.6);
-  const g = new THREE.BufferGeometry().setFromPoints([from, to.clone().add(jitter)]);
-  const m = new THREE.Line(g, new THREE.LineBasicMaterial({
-    color: 0xffd090, transparent: true, opacity: 0.9 }));
+  const j = new THREE.Vector3((Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.0, (Math.random() - 0.5) * 1.6);
+  const g = new THREE.BufferGeometry().setFromPoints([from, to.clone().add(j)]);
+  const m = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xffd090, transparent: true, opacity: 0.9 }));
   scene.add(m);
   setTimeout(() => scene.remove(m), 60);
 }
 
+const clock = new THREE.Clock();
 function tick() {
   requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 0.05);
 
   if (state === 'playing') {
+    stats.time += dt;
     player.update(dt, input);
     if (player.stepped) audio.step(player.speed > 3);
 
-    weapon.update(dt, input, player, enemies, map, (origin, tag) => {
-      if (tag) { hud.markHit(tag === 'head'); return; }   // a shot connected
+    weapon.update(dt, input, player, mission.enemies, map, (origin, tag) => {
+      stats.shots++;
+      if (tag) { stats.hits++; hud.markHit(tag === 'head'); }
       rig.addJolt(0.35);
-      for (const e of enemies) e.hearShot(origin);
+      for (const e of mission.enemies) e.hearShot(origin);
     });
 
-    for (const e of enemies) e.update(dt, player, enemyTracer);
+    for (const e of mission.enemies) e.update(dt, player, enemyTracer);
+    mission.update(dt, player);
+    stats.kills = mission.enemies.reduce((n, e) => n + (e.alive ? 0 : 1), 0);
 
     if (player.hp !== lastHp) {
       lastHp = player.hp;
       damage = 1;
       rig.addJolt(1.2);
       audio.hurt();
-      hud.setHealth(player.hp);
+      hud.setHealth(player.hp, player.maxHp);
     }
+    if (mission.banner && mission.banner.life > 3.3) hud.showBanner(mission.objective);
 
-    if (!player.alive && !over) {
-      over = 1;
-      hud.bigText('<b>END OF RECORDING</b><span>press R to restart</span>');
-    }
-    if (!over && enemies.every(e => !e.alive)) {
-      over = 2;
-      hud.bigText('<b>HOUSE CLEAR</b><span>press R to restart</span>');
-    }
-  }
+    exfilMark.visible = mission.phase === PHASE.EXFIL;
+    hud.setObjective(mission.objective,
+      mission.phase === PHASE.EXFIL || mission.phase === PHASE.DONE ? null : mission.alive);
 
-  if (over && input.fire === 0) {
-    addEventListener('keydown', e => { if (e.code === 'KeyR') location.reload(); }, { once: true });
+    if (!player.alive) { endTimer += dt; if (endTimer > 2.2) endRound(false); }
+    else if (mission.phase === PHASE.DONE) { endTimer += dt; if (endTimer > 1.4) endRound(true); }
   }
 
   damage = Math.max(0, damage - dt * 1.4);
-  fade += ((over === 1 ? 0.25 : 1) - fade) * Math.min(1, dt * 1.1);
+  const dying = state === 'playing' && !player.alive;
+  fade += ((dying ? 0.2 : 1) - fade) * Math.min(1, dt * 1.1);
 
   rig.update(dt, player, map.indoor(player.pos));
-  hud.showCrosshair(state === 'playing' && player.alive && !over);
-  hud.update(dt, weapon.spread, FOV, size()[1]);
+  hud.showCrosshair(state === 'playing' && player.alive);
+  hud.update(dt, weapon.spread, camera.fov, size()[1]);
 
   post.render(scene, camera, {
     time: performance.now() / 1000,
     shake: rig.shake,
     exposure: rig.exposure,
-    damage: Math.min(1, damage + (player.alive ? (1 - player.hp / 4) * 0.22 : 0)),
+    damage: Math.min(1, damage + (player.alive ? (1 - player.hp / Math.max(1, player.maxHp)) * 0.22 : 0)),
     fade,
     filter: rig.filter,
   });
 }
 tick();
 
-// Debug hook: lets you poke at the game from the browser console, and lets the
-// automated smoke test drive it without a mouse. Harmless to leave in.
+// Debug hook: poke at the game from the browser console, and let the automated
+// smoke tests drive it without a mouse.
 window.__dbg = {
-  player, enemies, rig, weapon, map, scene, renderer, input,
-  play() { state = 'playing'; briefing.style.display = 'none'; },
+  player, weapon, rig, map, scene, renderer, input, settings, ui, hud,
+  get enemies() { return mission ? mission.enemies : []; },
+  get mission() { return mission; },
+  get state() { return state; },
+  play: startMission,
   teleport(x, y, z) { player.pos.set(x, y, z); player.vel.set(0, 0, 0); },
   face(yaw, pitch = 0) { player.yaw = yaw; player.pitch = pitch; rig.yaw = yaw; rig.pitch = pitch; },
 };

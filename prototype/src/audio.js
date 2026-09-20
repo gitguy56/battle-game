@@ -14,7 +14,7 @@ export class Audio {
     const c = this.ctx;
 
     this.master = c.createGain();
-    this.master.gain.value = 0.7;
+    this.master.gain.value = this._vol == null ? 0.7 : this._vol;
     // Muffling after a loud noise close by.
     this.muffle = c.createBiquadFilter();
     this.muffle.type = 'lowpass';
@@ -35,7 +35,12 @@ export class Audio {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
 
-  resume() { this.init(); if (this.ctx.state === 'suspended') this.ctx.resume(); }
+  resume() { this.init(); if (this.ctx.state === 'suspended') this.ctx.resume(); this.setVolume(this._vol); }
+
+  setVolume(v) {
+    this._vol = v == null ? 0.7 : v;
+    if (this.master) this.master.gain.value = this._vol;
+  }
 
   burst({ dur = 0.25, freq = 1200, q = 0.7, type = 'lowpass', gain = 1, delay = 0 }) {
     if (!this.ctx) return;

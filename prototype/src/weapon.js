@@ -134,6 +134,8 @@ export class Weapon {
     const hits = ray.intersectObjects(targets, false);
 
     let end = origin.clone().addScaledVector(dir, 120);
+    let hitTag = null;
+    let killed = false;
     if (hits.length) {
       const h = hits[0];
       end = h.point.clone();
@@ -141,7 +143,8 @@ export class Weapon {
       if (owner) {
         const head = h.object.userData.part === 'head';
         owner.takeHit(head ? HEAD_DAMAGE : BODY_DAMAGE, this.audio);
-        onShot?.(origin, head ? 'head' : 'body');
+        hitTag = head ? 'head' : 'body';
+        killed = !owner.alive;
       } else {
         this.impact(h.point, h.face?.normal);
       }
@@ -154,7 +157,15 @@ export class Weapon {
     player.yaw += this.recoilYaw * 0.85;
     this.kick = 1;
     this.flash.intensity = 5;
-    onShot?.(origin, null);
+    onShot?.(origin, hitTag, killed);
+  }
+
+  reset() {
+    this.mag = MAG; this.reserve = 120;
+    this.cooldown = 0; this.reloading = 0;
+    this.recoilPitch = 0; this.recoilYaw = 0; this.kick = 0;
+    for (const t of this.tracers) this.scene.remove(t.mesh);
+    this.tracers.length = 0;
   }
 
   tracer(a, b) {

@@ -7,8 +7,10 @@ const SEE_RANGE = 45;
 const FOV_COS = Math.cos(THREE.MathUtils.degToRad(58));
 
 export class Enemy {
-  constructor(scene, post, map, audio) {
+  constructor(scene, post, map, audio, kind = 'rifleman') {
     this.scene = scene; this.map = map; this.audio = audio;
+    this.kind = kind;
+    this.accuracyScale = 1;
     this.pos = post.pos.clone();
     this.patrol = post.patrol.map(p => p.clone());
     this.leg = 0; this.yaw = 0;
@@ -207,6 +209,7 @@ export class Enemy {
     if (player.crouching) p *= 0.78;
     if (player.speed > 3) p *= 0.7;
     if (this.coverTarget) p *= 0.5;            // shooting on the move is poor
+    p *= this.accuracyScale;   // difficulty
     if (Math.random() < p) player.takeHit(Math.random() < 0.15 ? 2 : 1);
   }
 
