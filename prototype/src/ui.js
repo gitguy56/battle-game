@@ -126,16 +126,34 @@ export class UI {
     toggle('invertY', 'Invert vertical aim', '');
   }
 
+  // A grade, so a clean run reads as better than a scrappy one.
+  static grade(r) {
+    if (!r.win) return { letter: 'F', note: 'Did not make it out' };
+    const acc = r.shots ? r.hits / r.shots : 0;
+    let score = 0;
+    score += Math.min(1, acc / 0.45) * 45;                  // marksmanship
+    score += Math.max(0, 1 - r.time / 420) * 30;            // pace
+    score += (r.hpLeft / Math.max(1, r.maxHp)) * 25;        // came through intact
+    if (score >= 85) return { letter: 'S', note: 'Textbook' };
+    if (score >= 70) return { letter: 'A', note: 'Clean work' };
+    if (score >= 55) return { letter: 'B', note: 'Got it done' };
+    if (score >= 38) return { letter: 'C', note: 'Messy, but out' };
+    return { letter: 'D', note: 'Barely' };
+  }
+
   setResults(r) {
+    const g = UI.grade(r);
     this.root.querySelector('#ui-outcome').textContent = r.win ? 'Extracted' : 'Killed in action';
     const acc = r.shots ? Math.round((r.hits / r.shots) * 100) : 0;
     const mm = String(Math.floor(r.time / 60)).padStart(2, '0');
     const ss = String(Math.floor(r.time % 60)).padStart(2, '0');
     this.root.querySelector('#ui-stats').innerHTML = `
+      <div class="grade"><b>${g.letter}</b><span>${g.note}</span></div>
       <div><b>${r.kills}</b><span>enemies down</span></div>
       <div><b>${mm}:${ss}</b><span>time</span></div>
       <div><b>${acc}%</b><span>accuracy</span></div>
-      <div><b>${r.shots}</b><span>rounds fired</span></div>`;
+      <div><b>${r.shots}</b><span>rounds fired</span></div>
+      <div><b>${r.hpLeft}/${r.maxHp}</b><span>health left</span></div>`;
   }
 
   show(name) {

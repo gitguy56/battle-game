@@ -71,12 +71,27 @@ body shots.
 
 Each carries a different weapon and wants to fight at a different distance:
 
-- **Rifleman** — the baseline; takes cover readily
-- **Rusher** — submachine gun, closes fast, rarely bothers with cover
-- **Marksman** — marksman rifle, hangs back at 25m+, accurate, patient
-- **Shotgunner** — tougher, charges you, deadly inside a room
+| | Weapon | Fights at | Kills a standing player in |
+|---|---|---|---|
+| **Rifleman** | Rifle | 13m | ~5s |
+| **Rusher** | SMG | 4m | ~2s, if it reaches you |
+| **Shotgunner** | Shotgun | 3.5m | ~5s, and it is tougher |
+| **Marksman** | DMR | 26m | ~10s, from where you cannot easily reach |
+
+Times are on Regular against a player who stands still in the open, which is the
+worst thing you can do. Breaking line of sight resets their aim entirely.
 
 Kill one and the weapon they were carrying lands on the ground.
+
+## Difficulty
+
+| | Garrison | Counter-attack | Your health | Their accuracy |
+|---|---|---|---|---|
+| Recruit | 4 | 3 | 5 hits | 0.62x |
+| Regular | 6 | 4 | 4 hits | 1.0x |
+| Veteran | 8 | 5 | 3 hits | 1.2x |
+
+You are graded at the end on marksmanship, pace and how intact you came through.
 
 ## Settings
 
@@ -136,6 +151,7 @@ Tuning worth trying first, in order of how much they change the feel:
 | mission phases and spawns | `src/mission.js` | `GARRISON_POSTS`, `COUNTER_SPAWNS` |
 | movement speed | `src/player.js` | `crouching ? 1.6 : ...` |
 | how deadly they are | `src/ai.js` | `const settle = 0.14 + 0.30 *` |
+| a single enemy type | `src/ai.js` | `KINDS` — weapon, speed, range, damage |
 | how fast they notice you | `src/ai.js` | `let rate = 2.6 *` |
 | how loud the ambience is | `src/audio.js` | `startAmbient`, `g.gain.value` |
 | footstep character | `src/audio.js` | `SURFACES` |
@@ -147,9 +163,18 @@ Tuning worth trying first, in order of how much they change the feel:
 `window.__dbg` in the browser console exposes the player, enemies and map — try
 `__dbg.teleport(0, 0, -2)` to drop yourself inside the house.
 
+## Performance
+
+The compound is about 830 static boxes. Those are merged by material at load,
+taking the scene from 846 draw calls to 192. Particle effects run from fixed
+pools, so a firefight allocates nothing.
+
 ## Known limits
 
-- Software-rendered testing here managed 8 fps; on a real GPU it will run fine.
+- Testing here runs on a software renderer at single-digit frame rates; on any
+  real GPU it runs fine. Worth knowing if you ever automate tests: the
+  simulation clamps its timestep, so at 8 fps the game advances at roughly 0.4x
+  real time, and a test that waits in wall-clock seconds will misjudge it.
 - Enemies steer around obstacles by sliding along them rather than pathfinding,
   so they can still get hung up on an awkward corner.
 - Cover is chosen by sampling points and testing line of sight, not by a real

@@ -6,7 +6,7 @@ const KEY = 'unit21.settings.v1';
 export const DIFFICULTIES = {
   recruit:  { label: 'Recruit',  enemyAccuracy: 0.62, garrison: 4, counter: 3, playerHp: 5 },
   regular:  { label: 'Regular',  enemyAccuracy: 1.00, garrison: 6, counter: 4, playerHp: 4 },
-  veteran:  { label: 'Veteran',  enemyAccuracy: 1.35, garrison: 8, counter: 6, playerHp: 3 },
+  veteran:  { label: 'Veteran',  enemyAccuracy: 1.20, garrison: 8, counter: 5, playerHp: 3 },
 };
 
 const DEFAULTS = {

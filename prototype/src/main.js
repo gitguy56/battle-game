@@ -62,6 +62,7 @@ let mission = null;
 let state = 'menu';
 let stats = { shots: 0, hits: 0, kills: 0, time: 0 };
 let damage = 0, fade = 1, lastHp = 0, endTimer = 0, thumpTimer = 14;
+let heartTimer = 0, breathTimer = 0, sprintFov = 0;
 
 // --------------------------------------------------------------- settings ---
 function applySettings() {
@@ -187,7 +188,7 @@ function endRound(win) {
   clearInput();
   document.exitPointerLock();
   hud.setVisible(false);
-  ui.setResults({ ...stats, win });
+  ui.setResults({ ...stats, win, hpLeft: player.hp, maxHp: player.maxHp });
   ui.show('results');
 }
 ui.on.play = startMission;
@@ -271,13 +272,24 @@ function tick() {
     hud.setWeapon(weapon.spec.short, weapon.spec.name, weapon.mag, weapon.reserve,
       weapon.reloading > 0);
 
-    // Sights magnify by however much this weapon's optic is worth.
-    const want = settings.get('fov') * weapon.adsFov;
+    // Sights magnify by however much this weapon's optic is worth; sprinting
+    // opens the lens a little, which reads as effort.
+    sprintFov += ((player.sprinting ? 1 : 0) - sprintFov) * Math.min(1, dt * 6);
+    const want = settings.get('fov') * weapon.adsFov + sprintFov * 6 * (1 - weapon.ads);
     if (Math.abs(camera.fov - want) > 0.01) { camera.fov = want; camera.updateProjectionMatrix(); }
 
     exfilMark.visible = mission.phase === PHASE.EXFIL;
     hud.setObjective(mission.objective,
       mission.phase === PHASE.EXFIL || mission.phase === PHASE.DONE ? null : mission.alive);
+
+    // Badly hurt: your heart and your breathing become the loudest things.
+    const hurtFrac = 1 - player.hp / Math.max(1, player.maxHp);
+    if (player.alive && hurtFrac >= 0.5) {
+      heartTimer -= dt;
+      if (heartTimer <= 0) { audio.heartbeat(hurtFrac); heartTimer = 1.15 - hurtFrac * 0.45; }
+      breathTimer -= dt;
+      if (breathTimer <= 0) { audio.breath(); breathTimer = 1.9 - hurtFrac * 0.6; }
+    }
 
     // Distant artillery, so the fight sits inside a bigger war.
     thumpTimer -= dt;

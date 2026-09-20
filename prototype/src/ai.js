@@ -12,22 +12,24 @@ const FOV_COS = Math.cos(THREE.MathUtils.degToRad(58));
 export const KINDS = {
   rifleman: {
     weapon: 'rifle', hp: MAX_HP, speed: 2.0, preferred: 13, rangeFall: 45,
-    burst: [2, 4], cadence: [0.75, 1.5], acc: 1.0, cover: 0.5,
+    burst: [2, 4], cadence: [0.75, 1.5], acc: 1.0, cover: 0.5, damage: 1,
     uniform: 0x5c6b43, gear: 0x3b4230,
   },
   rusher: {
     weapon: 'smg', hp: MAX_HP, speed: 3.1, preferred: 4, rangeFall: 24,
-    burst: [4, 7], cadence: [0.5, 1.0], acc: 0.85, cover: 0.2,
+    burst: [4, 7], cadence: [0.5, 1.0], acc: 0.85, cover: 0.2, damage: 1,
     uniform: 0x4a5340, gear: 0x30352a,
   },
   marksman: {
     weapon: 'dmr', hp: MAX_HP, speed: 1.5, preferred: 26, rangeFall: 75,
-    burst: [1, 1], cadence: [1.5, 2.6], acc: 1.5, cover: 0.75,
+    burst: [1, 1], cadence: [1.5, 2.6], acc: 1.5, cover: 0.75, damage: 2,
     uniform: 0x54603f, gear: 0x2f3a2b,
   },
   shotgunner: {
+    // A shotgun blast at four metres is hard to miss and takes half of you with
+    // it, so: very likely to hit, and two hits will do it.
     weapon: 'shotgun', hp: MAX_HP + 1, speed: 2.9, preferred: 3.5, rangeFall: 13,
-    burst: [1, 1], cadence: [1.0, 1.7], acc: 1.2, cover: 0.25,
+    burst: [1, 1], cadence: [0.75, 1.25], acc: 2.0, cover: 0.25, damage: 2,
     uniform: 0x63614a, gear: 0x3a382c,
   },
 };
@@ -78,7 +80,7 @@ export class Enemy {
       return g;
     };
 
-    mesh(new THREE.CapsuleGeometry(0.19, 0.42, 4, 10), uniform, 0, 1.18, 0, 'body');
+    this.torso = mesh(new THREE.CapsuleGeometry(0.19, 0.42, 4, 10), uniform, 0, 1.18, 0, 'body');
     mesh(new THREE.BoxGeometry(0.44, 0.34, 0.28), gear, 0, 1.24, 0.01, 'body');
     mesh(new THREE.SphereGeometry(0.115, 12, 10), skin, 0, 1.60, 0, 'head');
     mesh(new THREE.SphereGeometry(0.135, 12, 8, 0, Math.PI * 2, 0, Math.PI / 1.9),
@@ -106,6 +108,7 @@ export class Enemy {
     this.lastPos = this.pos.clone();
     this.deathT = 0;
     this.deathTilt = 0;
+    this.flinch = 0;
 
     this.group.position.copy(this.pos);
     scene.add(this.group);
@@ -170,6 +173,13 @@ export class Enemy {
 
   // Legs and arms swing in proportion to how fast they are actually moving.
   animate(dt) {
+    // A visible reaction to being hit, so you can tell you connected even
+    // when the target does not go down.
+    if (this.flinch > 0) {
+      this.flinch = Math.max(0, this.flinch - dt * 4.5);
+      this.torso.rotation.x = -this.flinch * 0.42;
+      this.torso.position.z = this.flinch * 0.06;
+    }
     const moved = this.pos.distanceTo(this.lastPos) / Math.max(dt, 0.0001);
     this.lastPos.copy(this.pos);
     const gait = Math.min(moved / 3.0, 1);
@@ -291,9 +301,9 @@ export class Enemy {
     if (player.speed > 3) p *= 0.7;
     if (this.coverTarget) p *= 0.5;            // shooting on the move is poor
     p *= this.accuracyScale;                   // difficulty
-    const w = WEAPONS[K.weapon];
     if (Math.random() < p) {
-      player.takeHit(Math.random() < 0.15 ? w.head : w.body, this.pos);
+      // the occasional round finds something important
+      player.takeHit(K.damage + (Math.random() < 0.15 ? 1 : 0), this.pos);
       this.lastShotMiss = 0;
     } else {
       // How near it went. Biased by how good the shot was, so a dangerous
@@ -358,6 +368,7 @@ export class Enemy {
   takeHit(damage, audio, fromDir) {
     if (!this.alive) return;
     this.hp -= damage;
+    this.flinch = 1;
     audio?.flesh();
     this.awareness = 1.5;
     this.aimTime = 0;

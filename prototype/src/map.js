@@ -8,9 +8,45 @@
 //
 import * as THREE from 'three';
 import * as TEX from './textures.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const WALL_H = 2.7, WALL_T = 0.25;
 const HX = 6, HZ = 4.5;
+
+function mergeStatics(scene, meshes) {
+  const groups = new Map();
+  const keep = [];
+  for (const m of meshes) {
+    if (!m.isMesh || !m.geometry || !m.material || m.material.length) { keep.push(m); continue; }
+    const key = m.material.uuid;
+    if (!groups.has(key)) groups.set(key, { material: m.material, list: [] });
+    groups.get(key).list.push(m);
+  }
+  const out = [...keep];
+  for (const { material, list } of groups.values()) {
+    if (list.length < 2) { out.push(...list); continue; }
+    const geos = [];
+    for (const m of list) {
+      m.updateMatrixWorld(true);
+      const g = m.geometry.clone();
+      g.applyMatrix4(m.matrixWorld);
+      // merging needs a consistent attribute set
+      if (!g.attributes.uv) g.deleteAttribute('uv');
+      geos.push(g);
+    }
+    let combined = null;
+    try { combined = mergeGeometries(geos, false); } catch { combined = null; }
+    if (!combined) { out.push(...list); for (const g of geos) g.dispose(); continue; }
+    for (const m of list) { scene.remove(m); m.geometry.dispose(); }
+    for (const g of geos) g.dispose();
+    const mesh = new THREE.Mesh(combined, material);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    mesh.matrixAutoUpdate = false;
+    scene.add(mesh);
+    out.push(mesh);
+  }
+  return out;
+}
 
 export function buildMap(scene) {
   const colliders = [], solids = [];
@@ -264,8 +300,14 @@ const win = at => ({ at, width: 1.3, bottom: 0.95, top: 2.25 });
     c.position.set(x, 5.0, z); c.castShadow = true; scene.add(c); solids.push(c);
   }
 
+  // The compound is ~830 separate boxes, which is ~830 draw calls for geometry
+  // that never moves. Merging by material collapses that to a couple of dozen.
+  // Colliders were taken from the individual boxes above, so they are unaffected,
+  // and raycasts against a merged mesh work exactly the same.
+  const merged = mergeStatics(scene, solids);
+
   return {
-    colliders, solids,
+    colliders, solids: merged,
     playerSpawn: new THREE.Vector3(0, 0, 15.5),
     houseBounds: new THREE.Box3(new THREE.Vector3(-HX, 0, -HZ), new THREE.Vector3(HX, WALL_H, HZ)),
     indoor: p => (p.x > -6.3 && p.x < 6.3 && p.z > -4.8 && p.z < 4.8 && p.y < 2.6) ||

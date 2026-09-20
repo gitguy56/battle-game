@@ -1,5 +1,10 @@
 # Roles — one war, many jobs
 
+> **Shelved.** This plan is not being built. The project is now a single-player
+> tactical shooter — see the root [README](../README.md) and
+> [ROADMAP](ROADMAP.md). This document is kept because its reasoning still
+> holds and the ideas may come back.
+
 ## The idea
 
 The war is simulated once, underneath. You choose which job you do inside it.

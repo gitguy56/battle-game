@@ -1,5 +1,10 @@
 # Design
 
+> **Shelved.** This plan is not being built. The project is now a single-player
+> tactical shooter — see the root [README](../README.md) and
+> [ROADMAP](ROADMAP.md). This document is kept because its reasoning still
+> holds and the ideas may come back.
+
 ## 1. Three kinds of realism
 
 "Ultra realistic" means three different things, and they cost wildly different

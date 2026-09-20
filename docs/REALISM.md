@@ -21,6 +21,16 @@ cartoon next to it. The difference is almost entirely in the list below.
 
 Do these and the game feels serious before you have made a single asset.
 
+> **What the game actually did.** Four of these were put back, on purpose, after
+> playing it: the crosshair, a health display, hit confirmation and an ammunition
+> count. Each was reversed for a concrete reason, not a loss of nerve —
+> the crosshair because a shot that does not visibly go where you point is
+> indistinguishable from a bug; health pips because a game with four discrete
+> hit points needs them legible; hit marks because you cannot tell a miss from a
+> hit on an enemy who does not react; and the ammunition count because you
+> cannot choose between five weapons you cannot read. Everything else on this
+> list held, and the list is still the highest-value page in these documents.
+
 1. **No crosshair.** Use the weapon's actual sight. A floating dot in the middle of
    the screen is the single most arcade thing a shooter can have.
 2. **No health bar.** You learn you are hurt from your breathing, your screen, your

@@ -28,6 +28,7 @@ export class Player {
     this.speed = 0;
     this.lastStep = 0;
     this.stepped = false;
+    this.sprinting = false;
     this.lastHitFrom = null;
   }
 
@@ -96,6 +97,7 @@ export class Player {
 
     // Deliberately slow. Sprinting costs stamina and cannot be held.
     const canSprint = input.sprint && !this.crouching && this.stamina > 0.05 && input.fwd;
+    this.sprinting = !!(canSprint && moving);
     let spd = this.crouching ? 1.6 : (canSprint ? 5.2 : 3.1);
     if (input.ads) spd *= 0.55;
 

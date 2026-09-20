@@ -3,14 +3,24 @@
 Written for someone early in their coding journey, and optimised for *you
 finishing this* rather than for what a large studio would pick.
 
-> **This document changed when the project added 3D and player roles.** The
-> earlier plan used TypeScript and a 2D canvas, which was right for a pure
-> top-down wargame and is wrong now. 3D, a character controller and animation mean
-> you want a real engine.
+> **What actually happened.** This document recommended Godot, and the game was
+> built as a web page instead. The reason was practical rather than principled:
+> a browser build could be written, run, screenshotted and verified in one
+> sitting, and it can be played by clicking a link with nothing installed. Every
+> design answer in here still transferred — camera feel, movement weight,
+> lethality, layout. The Godot case below stands if the project ever wants
+> native builds, better tooling or heavier scenes.
 
-## 1. The engine
+## 1. What it is built with
 
-**Recommendation: Godot 4, using GDScript.**
+**Three.js in a single self-contained HTML file**, bundled by esbuild from the
+modules in `prototype/src/`. No install, no server, works offline. All textures
+are drawn on a canvas at load and all sound is synthesised in the browser, so
+there are no asset files at all.
+
+## 1b. The engine that was recommended
+
+**Godot 4, using GDScript.**
 
 - **Free and open source**, no royalties, no account, about a 100 MB download.
 - **GDScript looks like Python** — indentation, no semicolons, no memory

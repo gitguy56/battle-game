@@ -1,5 +1,10 @@
 # Prototype — 2v2, operator and shooter
 
+> **Shelved.** This plan is not being built. The project is now a single-player
+> tactical shooter — see the root [README](../README.md) and
+> [ROADMAP](ROADMAP.md). This document is kept because its reasoning still
+> holds and the ideas may come back.
+
 **This is now the first thing being built.** Everything else in this repository is
 the long game; this document is the next few months.
 

@@ -11,12 +11,12 @@ export const PHASE = { ASSAULT: 'assault', COUNTER: 'counter', EXFIL: 'exfil', D
 const GARRISON_POSTS = [
   { pos: [-3.5, 0, -3.0], patrol: [[-3.5, 0, -3.0], [-1.2, 0, -0.4]], kind: 'rifleman' },
   { pos: [4.0, 0, -2.0],  patrol: [[4.0, 0, -2.0], [3.2, 0, 2.4]],    kind: 'shotgunner' },
-  { pos: [-11, 0, -6],    patrol: [[-11, 0, -6], [-7, 0, 4], [2, 0, 8]], kind: 'rifleman' },
-  { pos: [15, 0, -3],     patrol: [[15, 0, -3], [12, 0, -6], [17, 0, 2]], kind: 'rifleman' },
-  { pos: [-5.5, 0, -13.5], patrol: [[-5.5, 0, -13.5], [-8, 0, -12]],    kind: 'rifleman' },
-  { pos: [9, 0, 6],       patrol: [[9, 0, 6], [14, 0, -6], [6, 0, -9]],  kind: 'rusher' },
-  { pos: [-4.7, 0, 3.3],  patrol: [[-4.7, 0, 3.3], [-1, 0, 3.0]],       kind: 'rifleman' },
   { pos: [-19, 0, 7],     patrol: [[-19, 0, 7]],                      kind: 'marksman' },
+  { pos: [-11, 0, -6],    patrol: [[-11, 0, -6], [-7, 0, 4], [2, 0, 8]], kind: 'rifleman' },
+  { pos: [9, 0, 6],       patrol: [[9, 0, 6], [14, 0, -6], [6, 0, -9]],  kind: 'rusher' },
+  { pos: [15, 0, -3],     patrol: [[15, 0, -3], [12, 0, -6], [17, 0, 2]], kind: 'rifleman' },
+  { pos: [-5.5, 0, -13.5], patrol: [[-5.5, 0, -13.5], [-8, 0, -12]],   kind: 'shotgunner' },
+  { pos: [-4.7, 0, 3.3],  patrol: [[-4.7, 0, 3.3], [-1, 0, 3.0]],      kind: 'rusher' },
 ];
 
 // The counter-attack comes down the road, so it arrives behind you.

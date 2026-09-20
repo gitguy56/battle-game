@@ -176,6 +176,15 @@ export class Audio {
     this.burst({ dur: 0.3, freq: 900, type: 'bandpass', q: 1.2, gain: 0.08, pan });
   }
 
+  heartbeat(strength = 1) {
+    this.tone({ f0: 62, f1: 30, dur: 0.14, gain: 0.26 * strength });
+    this.tone({ f0: 52, f1: 26, dur: 0.17, gain: 0.19 * strength, delay: 0.19 });
+  }
+
+  breath() {
+    this.burst({ dur: 0.34, freq: 520, type: 'bandpass', q: 0.8, gain: 0.10 });
+  }
+
   hurt() {
     this.burst({ dur: 0.2, freq: 300, type: 'lowpass', gain: 0.7 });
     this.deafen(0.8);
