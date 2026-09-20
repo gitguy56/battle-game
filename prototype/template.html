@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bodycam Prototype</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  body { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+  #game { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10;
+         text-transform: uppercase; letter-spacing: 0.08em; }
+  #bc-frame { position: absolute; inset: 0; }
+  #bc-frame > div { position: absolute; font-size: 13px; color: #e8e8e8;
+    text-shadow: 0 1px 3px #000, 0 0 10px rgba(0,0,0,.8); opacity: .88; }
+  .bc-tl { top: 18px; left: 22px; }
+  .bc-tr { top: 18px; right: 22px; }
+  .bc-bl { bottom: 18px; left: 22px; }
+  .bc-br { bottom: 18px; right: 22px; font-size: 11px; opacity: .55 !important; }
+  #bc-rec { color: #ff3b30; font-size: 15px; }
+  .bc-cell { display: inline-block; width: 22px; height: 11px; border: 1.5px solid #e8e8e8;
+    border-radius: 2px; position: relative; vertical-align: -1px; margin-left: 3px; }
+  .bc-cell::before { content: ""; position: absolute; inset: 1.5px; right: 40%; background: #e8e8e8; }
+  .bc-cell::after { content: ""; position: absolute; right: -4px; top: 3px; width: 2px;
+    height: 5px; background: #e8e8e8; }
+
+  #bc-msg { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%);
+    color: #f0f0f0; font-size: 14px; opacity: 0; transition: opacity .35s;
+    text-shadow: 0 2px 6px #000; white-space: nowrap; }
+
+  #bc-center { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; opacity: 0;
+    transition: opacity 1.2s; color: #fff; }
+  #bc-center b { font-size: 34px; letter-spacing: .22em; font-weight: 600; }
+  #bc-center span { font-size: 13px; opacity: .6; letter-spacing: .14em; }
+
+  #briefing { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 22px; background: #070807;
+    color: #d8d8d8; text-align: center; padding: 24px; cursor: pointer; }
+  #briefing h1 { font-size: 26px; letter-spacing: .3em; font-weight: 600; }
+  #briefing .sub { font-size: 12px; opacity: .5; letter-spacing: .2em; text-transform: uppercase; }
+  #briefing table { font-size: 13px; line-height: 2; opacity: .8; border-spacing: 26px 0; }
+  #briefing td:first-child { text-align: right; color: #7f8f7f; white-space: nowrap; }
+  #briefing td:last-child { text-align: left; }
+  #bc-start { font-size: 13px; letter-spacing: .2em; text-transform: uppercase;
+    border: 1px solid #3a463a; padding: 12px 26px; opacity: .85; }
+  #briefing .note { font-size: 11px; opacity: .35; max-width: 460px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud"></div>
+
+<div id="briefing">
+  <h1>UNIT 2-1</h1>
+  <div class="sub">Chest camera &middot; clear the house</div>
+  <table>
+    <tr><td>move</td><td>W A S D</td></tr>
+    <tr><td>sprint</td><td>Shift &mdash; costs stamina</td></tr>
+    <tr><td>crouch</td><td>C &mdash; quieter, steadier, harder to see</td></tr>
+    <tr><td>fire</td><td>Left mouse</td></tr>
+    <tr><td>aim</td><td>Right mouse &mdash; hold, there is no crosshair</td></tr>
+    <tr><td>reload</td><td>R</td></tr>
+    <tr><td>check magazine</td><td>F</td></tr>
+  </table>
+  <div id="bc-start">click to start</div>
+  <div class="note">Three of them, in and around the house. Two hits and you are done,
+    and so are they. There is no health bar, no ammo counter and no hit markers &mdash;
+    you find out by watching and listening.</div>
+</div>
+
+<script>/*__BUNDLE__*/</script>
+</body>
+</html>

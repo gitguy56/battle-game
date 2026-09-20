@@ -17,6 +17,15 @@ tomorrow. Destroy an electronic warfare station as a sapper and your side's dron
 pilots can suddenly fly ten kilometres deeper. The jobs are different; the war is
 the same war.
 
+## Playable now
+
+**[`prototype/bodycam-prototype.html`](prototype/bodycam-prototype.html)** — double-click
+it. A first-person slice: clear a village house, three enemies, seen through a
+chest-mounted camera. No install, no server, works offline.
+
+It is a *feel test*, not the real build — see [prototype/README.md](prototype/README.md)
+for why it is a web page rather than Godot, and what transfers.
+
 ## What is being built first
 
 **A 2v2 multiplayer prototype.** Each team has one **operator** flying a drone and
