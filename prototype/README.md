@@ -92,9 +92,11 @@ they apply live.
   it used to have read as the view "shifting" when you turned.
 - **Auto-exposure** — walk in through the front door and the camera hunts for
   exposure, exactly as a real one does. Stops down fast, opens up slowly.
-- **The map** — a house of four rooms off a central corridor with a different
-  floor in each, a barn you can fight inside, stone walls, crates and barrels for
-  cover, a well, and a shell hole punched through the back wall.
+- **The map** — a 50m compound holding a house of four rooms off a central
+  corridor (each with a different floor), a barn and a workshop you can fight
+  inside, a raised platform you climb by steps for overwatch, a sandbagged
+  fighting position, a rubble mound, stone walls, crates and barrels for cover,
+  a well, and a shell hole punched through the back wall of the house.
 - **Four enemies** that warn each other by shouting, break for cover after firing
   a burst, approach a lost contact from one side rather than straight on, sweep
   the area where they last saw you, and get steadily more accurate the longer you

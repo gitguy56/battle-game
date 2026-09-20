@@ -162,7 +162,7 @@ const win = at => ({ at, width: 1.3, bottom: 0.95, top: 2.25 });
     add(box(1.0, h, 1.0, M.crate, BX + x, h / 2, BZ + z));
 
   // ---- yard cover ----
-  for (const [x, z, w, d] of [[7.5, 2, 5, 0.5], [-6, 9, 0.5, 5], [10, -3, 0.5, 5]])
+  for (const [x, z, w, d] of [[7.5, 2, 5, 0.5], [-6, 9, 0.5, 5], [8.5, -11, 0.5, 5]])
     add(box(w, 1.05, d, M.stone, x, 0.52, z));
   for (const [x, z] of [[4.5, 6.5], [-8.5, 3], [9, 7], [-3, -9], [12, -9]]) {
     const b = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.95, 10), M.barrel);
@@ -187,7 +187,7 @@ const win = at => ({ at, width: 1.3, bottom: 0.95, top: 2.25 });
   }
 
   // ---- fence ----
-  const F = 19;
+  const F = 25;
   for (let i = -F; i <= F; i += 1.6) {
     for (const [x, z] of [[i, -F], [i, F], [-F, i], [F, i]]) {
       if (Math.abs(x) < 1.8 && z > 0) continue;
@@ -208,10 +208,54 @@ const win = at => ({ at, width: 1.3, bottom: 0.95, top: 2.25 });
   add(box(1.95, 0.85, 4.3, M.dark, 6.5, 0.42, 11));
   add(box(1.75, 0.7, 1.95, M.dark, 6.5, 1.2, 11.4));
 
+  // ---- workshop: a second building to fight over, open at both ends ----
+  const WX = 15, WZ = -3, WW = 8, WD = 6.5, WH = 3.4;
+  wall(WX - WW / 2, WZ + WD / 2, WX + WW / 2, WZ + WD / 2, M.barn, [door(4, 2.4)], WH);
+  wall(WX - WW / 2, WZ - WD / 2, WX + WW / 2, WZ - WD / 2, M.barn, [win(2.2), win(5.8)], WH);
+  wall(WX - WW / 2, WZ - WD / 2, WX - WW / 2, WZ + WD / 2, M.barn, [door(3.2, 1.6)], WH);
+  wall(WX + WW / 2, WZ - WD / 2, WX + WW / 2, WZ + WD / 2, M.barn, [], WH);
+  add(box(WW + 0.7, 0.16, WD + 0.7, M.roof, WX, WH + 0.08, WZ), false);
+  flat(WW, WD, M.concrete, WX, 0.02, WZ);
+  add(box(2.4, 0.9, 1.1, M.dark, WX - 1.6, 0.45, WZ - 1.6));       // workbench
+  add(box(1.0, 1.7, 0.6, M.crate, WX + 2.8, 0.85, WZ + 1.8));      // locker
+  for (const [x, z, h] of [[-2.6, 1.9, 0.9], [2.4, -2.1, 0.9], [2.4, -2.1, 0.9]])
+    add(box(1.0, h, 1.0, M.crate, WX + x, h / 2, WZ + z));
+
+  // ---- a fighting position: sandbags with a firing gap ----
+  const sandbag = (x, z, w, d, rows = 3) => {
+    for (let r = 0; r < rows; r++)
+      add(box(w, 0.3, d, M.dark, x, 0.15 + r * 0.3, z));
+  };
+  for (let i = 0; i < 5; i++) sandbag(-9 + i * 0.75, -15, 0.72, 0.45);
+  for (let i = 0; i < 5; i++) sandbag(-2 + i * 0.75, -15, 0.72, 0.45);
+  sandbag(-6.4, -14.2, 0.5, 1.8, 3);   // traverse, beside the entrance not across it
+
+  // ---- raised platform, reached by steps ----
+  // Each step rises 0.5m, inside the 0.55m the player can walk up unaided.
+  const PX = -20, PZ = 7;
+  for (const [dx, dz] of [[-1.7, -1.7], [1.7, -1.7], [-1.7, 1.7], [1.7, 1.7]])
+    add(box(0.24, 2.5, 0.24, M.wood, PX + dx, 1.25, PZ + dz));
+  add(box(4.2, 0.2, 4.2, M.wood, PX, 2.6, PZ));                  // deck
+  for (const [dx, dz, w, d] of [[0, -2.1, 4.2, 0.18], [0, 2.1, 4.2, 0.18],
+                                [-2.1, 0, 0.18, 4.2]])
+    add(box(w, 0.75, d, M.wood, PX + dx, 3.07, PZ + dz));        // rails
+  // the rail on the stair side is split, leaving a way in
+  for (const dz of [-1.45, 1.45])
+    add(box(0.18, 0.75, 1.3, M.wood, PX + 2.1, 3.07, PZ + dz));
+  for (let i = 0; i < 5; i++) {
+    const top = 0.5 + i * 0.5;
+    add(box(1.1, top, 1.6, M.wood, PX + 7.0 - i * 1.1, top / 2, PZ));
+  }
+
+  // ---- rubble mound, climbable by stepping ----
+  for (let i = 0; i < 5; i++)
+    add(box(3.4 - i * 0.5, 0.5, 3.0 - i * 0.45, M.stone, 18, 0.25 + i * 0.5, 9));
+
   // trees
   const bark = new THREE.MeshLambertMaterial({ color: 0x6b5238 });
   const leaf = new THREE.MeshLambertMaterial({ color: 0x5f7040 });
-  for (const [x, z] of [[-15, 9], [-9, 13], [13, -14], [16, 4], [-17, -1], [9, 14], [15, 12]]) {
+  for (const [x, z] of [[-15, 13], [-9, 16], [13, -16], [21, 6], [-22, -3], [9, 18],
+                        [20, 16], [-20, -12], [6, -20], [-13, 20]]) {
     const t = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.34, 4.2, 7), bark);
     t.position.set(x, 2.1, z); t.castShadow = true; scene.add(t); solids.push(t);
     colliders.push(new THREE.Box3().setFromCenterAndSize(
