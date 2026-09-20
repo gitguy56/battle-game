@@ -19,9 +19,16 @@ respected modern-war simulation on the market and it renders as a map with NATO
 symbols on it. What people praise is that the sensors, the weapons and the
 decision timelines behave correctly. That part is all code.
 
-Practical consequence: **the map is a top-down 2D hex map with military symbols.**
-No 3D, no first person, no character art. Every hour you would have spent on a
-tank model goes into the electronic warfare model instead.
+Practical consequence: **art effort goes into environment, light, weather and
+sound — never into characters or close-up detail.** A muddy tree line at dusk in
+fog reads as photoreal with very simple geometry; a human face never will at this
+budget. See REALISM.md for where every hour of art effort should go.
+
+> **Note on scope.** This document describes the **war simulation** — Layer 1 in
+> TECH.md. It runs headless, ticking the whole sector forward whether anyone is
+> watching or not. The player-facing roles in ROLES.md are Layer 2: different
+> windows onto this same running war. Everything below still applies; you now
+> experience it from inside rather than from a map view.
 
 ## 2. Setting
 
@@ -293,8 +300,11 @@ before the drones find it.
 
 Writing this list down is as important as the design itself.
 
-- **3D, first person, photoreal graphics.** Not achievable and not where the
-  realism lives.
+- **Photorealistic graphics.** Not achievable solo, and not where the realism
+  lives. 3D and first person *are* in scope; competing with Unreal on fidelity is
+  not. Realism comes from restraint, sound and lighting — see REALISM.md.
+- **Third-person characters on foot.** First person only, on foot. Third person is
+  reserved for vehicles, where it is cheap. See ROLES.md.
 - **Multiplayer.** Add it much later, if ever. It roughly doubles the work.
 - **The whole war.** One sector, one brigade. Strategic scope abstracts away every
   interesting mechanic.
@@ -303,3 +313,5 @@ Writing this list down is as important as the design itself.
 - **A custom engine.** Use existing tools.
 - **Politics, negotiations, nuclear escalation.** Different game.
 - **Starting with the AI.** Play both sides by hand until the rules are good.
+- **Starting with the rifleman.** The most expensive role is not the first role.
+  Build the drone. See ROLES.md.

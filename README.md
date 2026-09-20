@@ -1,26 +1,42 @@
 # Battle Game (working title)
 
-An operational-level wargame about modern high-intensity war: drones, artillery,
-electronic warfare, minefields and logistics, fought over a single ~30 x 30 km
-frontline sector.
+A realistic modern-war game where you choose **which job you do** — FPV drone
+pilot, artillery spotter, mortar crew, electronic warfare operator, sapper,
+rifleman — inside one continuously simulated frontline sector.
 
 **Status:** planning. No code yet.
 
-## The one-sentence pitch
+## The idea
 
-You command a brigade in a sector where nothing moves unseen — find the enemy
-before they find you, strike before they move, and keep the shells coming,
-because you will run out of ammunition long before you run out of tanks.
+The war is simulated once, underneath, and keeps running whether you are watching
+or not: contacts, artillery, supply, electronic warfare, weather. You pick a role
+and see it through that window.
+
+Kill a supply truck with an FPV drone and the battalion it fed is short of shells
+tomorrow. Destroy an electronic warfare station as a sapper and your side's drone
+pilots can suddenly fly ten kilometres deeper. The jobs are different; the war is
+the same war.
 
 ## Start here
 
-1. **[docs/DESIGN.md](docs/DESIGN.md)** — what the game is, and why it plays the way it does
-2. **[docs/TECH.md](docs/TECH.md)** — what we build it with, and how the code is arranged
-3. **[docs/ROADMAP.md](docs/ROADMAP.md)** — the build order, smallest playable step first
-4. **[docs/RESEARCH.md](docs/RESEARCH.md)** — where the real numbers come from
+1. **[docs/ROLES.md](docs/ROLES.md)** — the roles, what each costs to build, and the build order
+2. **[docs/REALISM.md](docs/REALISM.md)** — how to look and feel realistic on a beginner's budget
+3. **[docs/TECH.md](docs/TECH.md)** — Godot 4, and the two-layer architecture rule
+4. **[docs/ROADMAP.md](docs/ROADMAP.md)** — fourteen milestones, playable game at month three
+5. **[docs/DESIGN.md](docs/DESIGN.md)** — the war simulation that runs underneath
+6. **[docs/RESEARCH.md](docs/RESEARCH.md)** — where the real numbers come from
 
-## If you read nothing else
+## Three things that decide whether this works
 
-Realism in this genre does not come from graphics. It comes from modelling
-**information, time and supply** honestly. That is all code and data — no art
-team required. See "Three kinds of realism" in DESIGN.md.
+**Build the cheapest role first.** An FPV drone is a flying camera — no character,
+no animation, no enemy AI. A third-person rifleman needs 100+ animations and good
+combat AI, and costs roughly fifty times as much. Start with the drone, which is
+also the most distinctive thing in the game. (ROLES.md)
+
+**Realism is mostly deletion.** No crosshair, no health bar, no hit markers, no
+minimap, no respawn. These cost nothing and do more than a year of art.
+(REALISM.md Part 1)
+
+**Never let the roles touch the simulation directly.** Layer 1 is plain data and
+pure logic that runs headless. Layer 2 is Godot scenes that read it. Break this and
+the project becomes unfixable around role four. (TECH.md section 2)

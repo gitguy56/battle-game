@@ -1,143 +1,168 @@
 # Roadmap
 
-Each milestone ends with something you can **run and look at**. Never work for
-more than a couple of weeks without something on screen — that is how beginner
-projects die.
+Every milestone ends with something you can **run and look at**. Never work more
+than a couple of weeks without something on screen — that is how beginner projects
+die.
 
-Time estimates assume a few hours a week and that you are learning as you go.
-Halve them if you have more time; do not be discouraged if they run long.
+Estimates assume a few hours a week while learning as you go. Halve them if you
+have more time. Do not be discouraged if they run long; they will.
 
----
-
-### M0 — A map on screen
-Render a 60 x 60 hex grid with a few terrain types. Click a hex, see its
-coordinates in the corner. Pan and zoom.
-
-**Done when:** you can click any hex and the right one highlights.
-**Teaches:** canvas drawing, hex coordinates, mouse input.
-**Estimate:** 1-2 weeks. *This is the milestone where most people quit. It is
-unglamorous and it is the foundation of everything. Push through it.*
+> **This roadmap changed when the project added 3D and player roles.** It now
+> builds the cheapest, most distinctive role to a high standard first, and adds
+> the expensive ones later. See ROLES.md for why the ordering is what it is.
 
 ---
 
-### M1 — Units that take orders
-Load units from `data/units.json`. Draw them as NATO symbols. Select one, order
-it to a hex, press "end turn", watch both sides move simultaneously.
+## Phase 1 — The drone (months 1-3)
 
-**Done when:** a WEGO turn resolves and both sides' units have moved.
-**Teaches:** the `GameState` shape, `resolveTurn`, why simultaneous resolution is
-not the same as taking turns.
-**Estimate:** 2-3 weeks.
+### M0 — Godot, a hill, and a camera you can fly
+A terrain, a sky, and a camera you control with a gamepad or keyboard. No game
+yet. Just flight that feels right.
 
----
+**Done when:** flying around the terrain is genuinely enjoyable with nothing else
+in the scene. If flight feels bad, everything built on it feels bad.
+**Teaches:** Godot scenes, 3D transforms, input, terrain.
+**Estimate:** 3-4 weeks. *This is where most people quit. Push through it.*
 
-### M2 — Fog of war and contacts
-Line of sight. Detection rolls. You stop seeing enemy units and start seeing
-*contacts* that age, drift and misclassify.
+### M1 — The video feed
+The shader that turns your clean 3D render into an FPV goggles view: low
+resolution, scanlines, compression artefacts, interference that worsens with
+distance, a battery readout, and a signal-loss state.
 
-**Done when:** you can watch a contact marker decay and get it wrong.
-**Teaches:** the most important system in the game (DESIGN 5.1).
-**Estimate:** 3-4 weeks. Worth every day of it.
-
----
-
-### M3 — Direct fire
-Units in contact shoot. Strength, suppression, fatigue and cohesion — four
-separate numbers, not one health bar. Units can rout.
-
-**Done when:** a fight resolves and a unit breaks and runs.
+**Done when:** a screenshot is hard to tell apart from real FPV footage.
+**Why so early:** this is the single biggest "looks realistic" win in the project,
+it is mostly one shader file, and it makes everything you build afterwards look
+better. See REALISM.md.
 **Estimate:** 2 weeks.
 
----
+### M2 — Something to kill
+A handful of vehicles in the world. Flight physics with momentum. Impact
+detection, damage by hit location, and an explosion with real sound.
 
-### M4 — Artillery and the recon-strike loop ⭐
-Fire missions with real delays. Shells land where you *thought* the target was.
-Ammunition counters. Counterbattery fire against batteries that did not displace.
+**Done when:** you dive on a parked vehicle, hit the engine deck, and it is
+genuinely satisfying.
+**Estimate:** 3 weeks.
 
-**Done when:** you call fire on a stale contact and the shells hit empty ground —
-and you understand exactly why.
+### M3 — A mission ⭐
+Take off from a tree line, fly out with a finite battery, find a target that is
+trying to hide, hit it. Fail states: battery dead, lost signal, missed, shot down.
 
-**⭐ This is the vertical slice.** At the end of M4 you have the soul of the
-design in a playable form: find, decide, shoot, miss because you were slow. If
-you only ever finish four milestones, finish these four. Everything after this is
-deepening, not inventing.
-**Estimate:** 3-4 weeks.
-
----
-
-### M5 — Drones
-Recon quadcopters, FPV strike, fixed-wing recon, loitering munitions. Operators,
-endurance timers, link quality.
-
-**Done when:** a drone spots for artillery, closing the loop in minutes instead
-of hours — and killing the operator blinds the whole sector.
+**⭐ This is the vertical slice.** At M3 you have a complete, novel, genuinely
+good small game. Three months in. Put it in front of people.
 **Estimate:** 3 weeks.
 
 ---
 
-### M6 — Supply
-Depots, a road graph, consumption, interdiction. Units run dry and stop firing.
+## Phase 2 — The war underneath (months 4-7)
 
-**Done when:** cutting one road silences a battalion three hexes away.
-**Estimate:** 3 weeks. The flow calculation is the hardest maths in the project;
-it is fine to start with something crude and improve it.
+### M4 — The simulation layer
+Layer 1 from TECH.md: units, supply, ammunition, movement, ticking forward
+independently of what you are looking at. Headless and testable.
 
----
+**Done when:** the war runs for a simulated week with no window open and the
+numbers still make sense.
+**Estimate:** 4-5 weeks. Unglamorous, and it is what makes everything after this
+possible.
 
-### M7 — Electronic warfare
-The EW intensity layer. Jammers degrade drone links and satellite-guided
-munitions. Active jammers are detectable and get hunted.
+### M5 — Contacts and fog of war
+Sensors, detection rolls, contacts that age and drift and misclassify. Both sides
+act on beliefs, never on truth.
 
-**Done when:** driving under a jamming umbrella makes you invisible to FPVs — and
-the jammer itself gets killed by a loitering munition twenty minutes later.
-**Estimate:** 2 weeks. High payoff per hour: almost no other game does this.
+**Done when:** you fly out to a marked contact and find the enemy left an hour ago.
+**Estimate:** 3 weeks.
 
----
+### M6 — Artillery, and the recon drone role
+The second role. Loiter, find, mark, call fire, watch the flight time elapse,
+correct, watch them scatter. Shells land where you *thought* the target was.
 
-### M8 — Mines and engineering
-Mine density per hex. Breaching takes multiple exposed turns. Naive armoured
-thrusts die; prepared combined-arms breaches get through at cost.
+**Done when:** you spot for guns you are not controlling and it feels like a job.
+**Estimate:** 4 weeks.
 
-**Done when:** you have lost a tank company to a minefield and then successfully
-breached one properly.
-**Estimate:** 2 weeks.
+### M7 — The mortar crew role
+The other end of the same radio. Grid reference, charge, elevation, deflection,
+fire, wait, correct, fire for effect — then displace before counterbattery lands.
 
----
-
-### M9 — An opponent
-An AI that reads a `GameState`, reasons about *its own contacts* (never the
-truth), and returns orders. Start embarrassingly simple: hold ground, fire at the
-best contact, displace after firing, rotate exhausted units.
-
-**Done when:** you lose a game to it and it did nothing obviously stupid.
-**Estimate:** 4+ weeks, and genuinely open-ended. Simple and consistent beats
-clever and erratic.
+**Done when:** you get greedy, fire one extra mission before moving, and die for it.
+**Estimate:** 2-3 weeks. Cheap, because it reuses M6 entirely.
 
 ---
 
-### M10 — Scenarios and release
-Three or four hand-built scenarios. Victory conditions. A tutorial. Deploy to
-GitHub Pages and put the link somewhere people play wargames.
+## Phase 3 — The spectrum (months 8-10)
 
-**Estimate:** 3-4 weeks.
+### M8 — Electronic warfare
+The jamming field. Flying into a jammed area degrades your link and can lose you
+the drone. Fibre-optic FPVs ignore it — the answer to the answer.
+
+**Done when:** a jammer denies a whole sector to your drones and changes how you
+fly.
+**Estimate:** 3 weeks.
+
+### M9 — The EW operator role
+A spectrum display. Find emitters, choose what to jam, and live with the fact that
+jamming makes you a target.
+
+**Done when:** you jam at the right moment to save an assault, and a loitering
+munition arrives twenty minutes later.
+**Estimate:** 3 weeks. Almost pure interface, and nothing else on the market does it.
 
 ---
 
-## Total
+## Phase 4 — On foot (months 11-18+)
 
-Roughly **six to nine months** at a few hours a week to reach M10 — and you will
-have something playable and genuinely interesting from M4, a few months in.
+### M10 — Character controller and night
+First-person movement, stamina, weight, stance. Night rendering and night vision
+with a narrow field of view and real grain.
 
-That is a normal timeline for a solo systems wargame. It is also roughly 1% of
-what "ultra realistic" would cost in the photoreal-3D sense, for something that
-the wargaming audience will find *more* realistic, not less.
+**Estimate:** 6 weeks.
+
+### M11 — The sapper role
+Cross open ground at night, avoid patrols and thermal cameras, place a charge, and
+withdraw — which is the hard part.
+
+**Done when:** the withdrawal is more frightening than the approach.
+**Estimate:** 6 weeks.
+
+### M12 — Infantry combat
+Ballistics, lethality, suppression, wounds and bleeding. Enemy AI with perception,
+cover and pathfinding.
+
+**Estimate:** 4-6 months, honestly, and possibly more. Combat AI is one of the
+hardest problems in the field, and bad AI destroys realism instantly.
+
+### M13 — Vehicles
+Driver, gunner and commander seats. Third-person camera, which is correct and
+cheap here.
+
+**Estimate:** 2-3 months.
+
+---
+
+## Timelines, honestly
+
+| Target | Realistic time, few hours a week |
+|---|---|
+| **M3 — a complete FPV drone game** | **~3 months** |
+| M7 — three roles and a live war underneath | ~7 months |
+| M9 — plus electronic warfare | ~10 months |
+| M11 — plus night infiltration | ~15 months |
+| M13 — the full vision | **2-3 years** |
+
+The two-to-three-year figure is not a warning, it is just what this genre costs.
+*Squad*, *Insurgency* and *Zero Hour* were all built by teams over years. What
+makes this plan work is that **you have something worth playing at month three**,
+and every phase after that is an addition rather than a prerequisite.
+
+If you stop at M3, you made a good game. If you stop at M7, you made something
+nobody else has made. Neither is failure.
 
 ## Rules for not failing
 
-1. **Never break the architecture rule** in TECH.md section 2.
-2. **Commit every session**, even broken work, on a branch.
-3. **Finish milestones in order.** Each depends on the last.
-4. **When bored, tune data, not code.** Editing JSON to make artillery feel right
-   is progress and it is fun.
-5. **Play your own game every milestone.** If it is not interesting at M4, the
-   problem will not be fixed by M9.
+1. **Never break the two-layer rule** in TECH.md section 2.
+2. **Build roles cheapest-first.** The rifleman is not a starting point.
+3. **Delete before you add.** REALISM.md Part 1 is free and worth more than months
+   of art.
+4. **Commit every session**, even broken work, on a branch.
+5. **Play your own game at every milestone.** If M3 is not fun, M12 will not
+   rescue it.
+6. **When stuck or bored, tune data or work on sound.** Both are real progress and
+   both are more fun than debugging.

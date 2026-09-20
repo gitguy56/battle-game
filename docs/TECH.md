@@ -1,166 +1,163 @@
 # Technology and code structure
 
-Written for someone early in their coding journey. The choices below optimise for
-*you finishing this*, not for what a large studio would pick.
+Written for someone early in their coding journey, and optimised for *you
+finishing this* rather than for what a large studio would pick.
 
-## 1. The stack
+> **This document changed when the project added 3D and player roles.** The
+> earlier plan used TypeScript and a 2D canvas, which was right for a pure
+> top-down wargame and is wrong now. 3D, a character controller and animation mean
+> you want a real engine.
 
-**Recommendation: TypeScript, running in the browser, drawing to an HTML canvas,
-built with Vite.**
+## 1. The engine
 
-Four reasons, in order of importance:
+**Recommendation: Godot 4, using GDScript.**
 
-1. **This game is ~90% simulation logic and ~10% drawing.** You are writing rules
-   about detection and supply, not rendering engines. A game engine would mostly
-   be in the way.
-2. **The debugging is the gentlest that exists.** Browser dev tools let you pause
-   mid-turn and inspect the entire game state as a tree you can click through.
-   Nothing else is close for a beginner.
-3. **Zero friction for players.** You send a link. No installer, no platform
-   builds, no store. GitHub Pages hosts it free, straight from this repository.
-4. **TypeScript catches your mistakes before you run.** For a simulation with
-   dozens of interacting numbers, having the editor say *"a Contact does not have
-   a `.strength`, did you mean the Unit it points to?"* will save you many hours.
+- **Free and open source**, no royalties, no account, about a 100 MB download.
+- **GDScript looks like Python** — indentation, no semicolons, no memory
+  management. It is the gentlest language any major engine offers.
+- **Godot 4's 3D is genuinely good** — physically based rendering, global
+  illumination, volumetric fog. Everything in REALISM.md is achievable in it.
+- **Fast iteration.** Press play, the game runs in under a second. When you are
+  learning, the speed of the try-it-and-see loop matters more than almost anything.
+- **Scenes compose naturally**, which maps perfectly onto "each role is a different
+  window onto the same war".
 
 ### Alternatives, honestly assessed
 
-| Option | Use it if | Cost |
+| Engine | Use it if | The real cost |
 |---|---|---|
-| **Godot 4 (GDScript)** | You are sure you want 3D or fancy visuals later | You learn an engine *on top of* learning to code. Real extra work. |
-| **Python + pygame** | You want the gentlest possible language | Fine for learning; painful to share with players, and slow once the sim gets big. |
-| **Unity / Unreal** | — | Overkill. Heavy, complex, aimed at exactly the visual realism we decided to skip. |
+| **Unreal 5** | Photorealism is genuinely non-negotiable | Gives you Lumen, Nanite and free Megascans, so it *does* look better out of the box. But it is a huge download, demands a strong PC, iterates slowly, and when something breaks the error surface is enormous. It is an industry tool that assumes you already know what you are doing. |
+| **Unity** | You want the largest tutorial library | Fine engine, C# is harder than GDScript, and the licensing history makes people wary. |
+| **Build your own** | Never | Not a real option. |
 
-Start with TypeScript. If this project succeeds and you want a 3D version in
-three years, all the simulation logic ports over — because of the architecture
-rule below.
+Start in Godot. If in two years the drone role is brilliant and you want to remake
+it photoreal in Unreal, you will by then be a competent programmer and the
+simulation code ports over — because of the architecture rule below.
 
-## 2. The one architecture rule
+## 2. The two-layer architecture
 
-> **The simulation is plain data and pure functions. Rendering only reads.**
+This is the most important idea in the project. Read it twice.
 
-Concretely:
-
-```ts
-// The entire game is ONE plain-data object. No functions, no classes inside it.
-type GameState = {
-  turn: number
-  weather: Weather
-  map: { terrain: Uint8Array; mines: Float32Array; ewIntensity: Float32Array }
-  units: Unit[]
-  contacts: { red: Contact[]; blue: Contact[] }   // what each side believes
-  fireMissions: FireMission[]
-  rngSeed: number
-}
-
-// Advancing time is one pure function. Same inputs -> same output. Always.
-function resolveTurn(state: GameState, redOrders: Order[], blueOrders: Order[]): GameState
-
-// Drawing NEVER changes anything. It only looks.
-function render(ctx: CanvasRenderingContext2D, state: GameState, viewingSide: Side): void
+```
++---------------------------------------------------+
+|  LAYER 1: THE WAR SIMULATION                      |
+|  Plain data. Pure logic. No 3D, no rendering.     |
+|  Units, contacts, artillery, supply, EW, weather. |
+|  Ticks forward whether anyone is watching or not. |
++---------------------------------------------------+
+                        ^
+                        |  reads state / sends actions
+                        v
++---------------------------------------------------+
+|  LAYER 2: ROLE VIEWS                              |
+|  Godot scenes. One per role.                      |
+|  FPVDrone.tscn  MortarPit.tscn  EWStation.tscn    |
+|  Sapper.tscn    Rifleman.tscn                     |
++---------------------------------------------------+
 ```
 
-Follow this rule and you get five things almost for free:
+**The rule: Layer 1 never imports anything from Layer 2.** The simulation must be
+able to run with no window open at all.
 
-- **Saving** is `JSON.stringify(state)`. Loading is `JSON.parse`.
-- **Replays** are a seed plus the list of orders. Kilobytes, not megabytes.
-- **Undo** is keeping the previous state object.
-- **Tests** become easy: build a state, resolve a turn, assert on the result.
-- **The AI** is just another thing that reads a state and returns orders. It plugs
-  into the exact same slot the human does.
+Why this matters so much here:
 
-Break this rule — let the drawing code nudge unit positions, scatter game logic
-into click handlers — and the project becomes unfixable around Milestone 5. This
-is the most valuable single sentence in these documents.
+- **Roles become cheap to add.** A new role is a new scene that reads the same
+  world. You are not rebuilding the game each time.
+- **Your actions persist.** The truck you killed as a drone pilot is gone from the
+  simulation, so the battalion it supplied is short of shells tomorrow — in
+  whatever role you play next.
+- **Saving** is serialising Layer 1.
+- **Testing** is possible at all. You can run a thousand simulated turns headless
+  in a second and check the numbers are sane.
+- **The AI** plugs into the same slot a player does.
 
-### Corollary: seed your randomness
+Break this rule — let a drone's collision handler directly change a battalion's
+ammunition count — and around role four the project stops being fixable. This is
+the most common way ambitious solo projects die.
 
-Never call `Math.random()` in simulation code. Use a small seeded generator stored
-in the state. Then a bug is reproducible, and "why did my battalion evaporate" is
-a question you can actually answer by replaying it.
-
-## 3. Folder layout
+## 3. Project layout
 
 ```
 battle-game/
-  index.html
-  src/
-    main.ts              # startup, input, the frame loop
-    core/
-      hex.ts             # hex coordinate maths (see RESEARCH.md for the guide)
-      rng.ts             # seeded random number generator
-      state.ts           # the GameState type and a blank starting state
-    sim/                 # PURE. No drawing, no DOM, no Math.random.
-      turn.ts            # resolveTurn — orchestrates the phases below, in order
-      movement.ts
-      spotting.ts        # sensors -> contacts    (Milestone 2)
-      combat.ts          # direct fire            (Milestone 3)
-      artillery.ts       # fire missions, counterbattery (Milestone 4)
-      drones.ts          # (Milestone 5)
-      supply.ts          # (Milestone 6)
-      ew.ts              # (Milestone 7)
-      engineering.ts     # mines and breaching    (Milestone 8)
-    ai/
-      opponent.ts        # reads a GameState, returns Orders  (Milestone 9)
-    render/
-      map.ts             # terrain hexes
-      symbols.ts         # NATO unit symbols
-      ui.ts              # panels, order entry
-  data/                  # tuning values. Edit these WITHOUT touching code.
+  project.godot
+  sim/                    # LAYER 1 - pure logic, no visuals, no Node3D
+    world.gd              # the world state object
+    tick.gd               # advance the war by one step
+    spotting.gd           # sensors -> contacts
+    artillery.gd          # fire missions, flight time, counterbattery
+    supply.gd
+    ew.gd                 # the jamming field
+    rng.gd                # seeded randomness - never use randf() in sim
+  roles/                  # LAYER 2 - one folder per role
+    fpv_drone/
+      fpv_drone.tscn
+      flight.gd           # flight physics
+      video_feed.gdshader # grain, interference, compression artefacts
+    recon_drone/
+    mortar_pit/
+    ew_station/
+    sapper/
+    rifleman/
+  world/                  # the shared 3D environment
+    terrain/
+    props/
+    weather.gd
+    lighting.gd
+  audio/
+  data/                   # tuning values as .json - edit WITHOUT touching code
     units.json
     weapons.json
     sensors.json
-  scenarios/
-    01-tree-line.json
+  missions/
   tests/
 ```
 
-The `sim/` and `render/` split is the architecture rule made physical. If you ever
-find yourself importing something from `render/` into `sim/`, stop — something has
-gone wrong.
+If you ever find yourself importing something from `roles/` into `sim/`, stop.
+Something has gone wrong.
 
 ## 4. Data-driven from day one
 
-Every number that describes the world lives in JSON, never in code:
+Every number describing the world lives in JSON, never buried in code:
 
 ```json
 {
-  "id": "spg_155_wheeled",
-  "name": "155mm wheeled SPG battery",
-  "category": "artillery",
-  "maxRangeKm": 40,
-  "emplaceTurns": 1,
-  "displaceTurns": 1,
-  "roundsPerFireMission": 6,
-  "signature": { "visual": 0.7, "thermal": 0.8, "acoustic": 0.9, "em": 0.2 },
-  "_source": "open published figures - see docs/RESEARCH.md"
+  "id": "fpv_fibre",
+  "name": "Fibre-optic FPV strike drone",
+  "enduranceSeconds": 480,
+  "cruiseSpeedMs": 28,
+  "linkRangeKm": 15,
+  "jamSusceptibility": 0.0,
+  "_source": "estimate - see docs/RESEARCH.md"
 }
 ```
 
-Two payoffs. **Balancing becomes editing a file**, not hunting through code for a
-magic number. And **realism becomes a research task you can do in the evening** —
-find a better published figure, change one line, done.
+Balancing then becomes editing a file rather than hunting for a magic number, and
+improving realism becomes an evening's research rather than a refactor.
 
-## 5. Testing
+## 5. What to learn, in order
 
-You do not need full test coverage. You *do* need tests on the parts where a
-silent wrong answer would poison everything downstream. Use Vitest, and cover:
+Do not read ahead. Learn each thing *because* the next milestone needs it.
 
-- hex distance and line-of-sight maths
-- contact decay over time
-- the supply flow calculation
-- one full end-to-end turn resolution on a tiny fixed scenario
-
-## 6. What to learn, in order
-
-Rough guide, assuming a few hours a week. Do not read ahead — learn each one
-*because* the next milestone needs it.
-
-1. **JavaScript basics** — variables, functions, arrays, objects, loops. (2-3 weeks)
-2. **TypeScript types** — just `type`, `interface`, and typing function arguments.
-   Ignore generics and decorators for a long time. (1 week)
-3. **Canvas drawing** — `fillRect`, `arc`, `fillText`, coordinate transforms. (a few days)
-4. **Hex grid maths** — Red Blob Games' guide, linked in RESEARCH.md. Work through
-   it once with code open. (a weekend)
-5. **Git** — commit, branch, push. You already have the repository. (ongoing)
+1. **GDScript basics** — variables, functions, arrays, dictionaries, loops,
+   classes. (3-4 weeks)
+2. **Godot nodes and scenes** — how a scene tree works, instancing, signals. This
+   is the concept that unlocks the engine. (2 weeks)
+3. **3D transforms** — position, rotation, basis vectors, moving a camera in
+   space. Needed for the drone. (1-2 weeks)
+4. **Godot shaders** — enough to write the video-feed effect. Surprisingly
+   approachable and enormously rewarding. (1 week)
+5. **Lighting and environment** — HDRIs, fog, post-processing. This is where
+   "looks realistic" actually comes from. (ongoing)
+6. **Audio** — buses, 3D positional sound, reverb. (1 week)
+7. **Git** — commit, branch, push. You have the repository already. (ongoing)
 
 Everything past that, learn when a milestone demands it.
+
+## 6. A warning about tutorials
+
+Most Godot tutorials teach 2D platformers, and most YouTube "make an FPS in Godot"
+videos produce an arcade shooter with a crosshair, a health bar and hitscan
+weapons — precisely the things REALISM.md tells you to delete.
+
+Use tutorials to learn *the engine*. Take design direction from these documents and
+from the games in REALISM.md Part 5, not from the tutorials.
