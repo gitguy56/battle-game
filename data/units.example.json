@@ -1,0 +1,74 @@
+{
+  "_comment": "Example shape only. Figures are placeholders - replace with researched values and cite them in _source. See docs/RESEARCH.md.",
+  "unitTypes": [
+    {
+      "id": "mech_inf_coy",
+      "name": "Mechanised infantry company",
+      "category": "infantry",
+      "personnel": 110,
+      "vehicles": 14,
+      "moveRoadKmh": 45,
+      "moveOffRoadKmh": 18,
+      "directFireRangeKm": 1.5,
+      "ammoLoad": 100,
+      "ammoPerTurnFiring": 12,
+      "fuelPerHexMoved": 2,
+      "signature": { "visual": 0.6, "thermal": 0.7, "acoustic": 0.6, "em": 0.3 },
+      "_source": "estimate"
+    },
+    {
+      "id": "spg_155_battery",
+      "name": "155mm self-propelled battery",
+      "category": "artillery",
+      "personnel": 40,
+      "vehicles": 6,
+      "moveRoadKmh": 50,
+      "moveOffRoadKmh": 15,
+      "indirectFireRangeKm": 30,
+      "emplaceTurns": 1,
+      "displaceTurns": 1,
+      "roundsPerMission": 6,
+      "ammoLoad": 240,
+      "counterbatteryRiskAfterTurns": 2,
+      "signature": { "visual": 0.7, "thermal": 0.8, "acoustic": 0.9, "em": 0.2 },
+      "_source": "estimate"
+    },
+    {
+      "id": "recon_quad",
+      "name": "Reconnaissance quadcopter",
+      "category": "drone",
+      "droneClass": "recon-rotary",
+      "requiresOperator": true,
+      "enduranceTurns": 1,
+      "linkRangeKm": 8,
+      "jamSusceptibility": 0.9,
+      "detectionRangeKm": 3,
+      "signature": { "visual": 0.1, "thermal": 0.1, "acoustic": 0.3, "em": 0.5 },
+      "_source": "estimate"
+    },
+    {
+      "id": "fpv_fibre",
+      "name": "Fibre-optic FPV strike drone",
+      "category": "drone",
+      "droneClass": "strike-oneway",
+      "requiresOperator": true,
+      "enduranceTurns": 1,
+      "linkRangeKm": 15,
+      "jamSusceptibility": 0.0,
+      "killProbabilityVsVehicle": 0.45,
+      "signature": { "visual": 0.1, "thermal": 0.05, "acoustic": 0.2, "em": 0.0 },
+      "_source": "estimate"
+    },
+    {
+      "id": "ew_station",
+      "name": "Electronic warfare station",
+      "category": "ew",
+      "jamRadiusKm": 10,
+      "jamIntensity": 0.8,
+      "emitsWhenActive": true,
+      "displaceTurns": 1,
+      "signature": { "visual": 0.5, "thermal": 0.5, "acoustic": 0.3, "em": 1.0 },
+      "_source": "estimate"
+    }
+  ]
+}
