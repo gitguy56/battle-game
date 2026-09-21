@@ -21,6 +21,9 @@ export const SLAM = {
   maxChainBonus: 12,
   window: 3.2,           // lose the chain and the run restarts
   groundShock: 6.5,      // a ground slam kills anything this close
+  assistRange: 26,       // how far to the side a dive will steer onto someone
+  assistFall: 38,        // and how far below you they can be
+  assistSpeed: 46,       // but never faster than this, so it stays a dive
   freeze: 0.075,
   freezeScale: 0.28,
 };
@@ -49,11 +52,45 @@ export class SlamSystem {
   get bonus() { return Math.min(SLAM.maxChainBonus, this.chain * SLAM.perChain); }
 
   // Begin a dive. Only in the air - on the ground there is nothing to fall onto.
+  // Who would a dive from here land on? Anyone below us and within reach.
+  candidate(runner) {
+    let best = null, bestScore = Infinity;
+    for (const e of this.field.list) {
+      if (!e.alive) continue;
+      const dy = runner.pos.y - e.pos.y;
+      if (dy < 1.0 || dy > SLAM.assistFall) continue;         // must be below us
+      const dx = e.pos.x - runner.pos.x, dz = e.pos.z - runner.pos.z;
+      const flat = Math.hypot(dx, dz);
+      if (flat > SLAM.assistRange) continue;
+      if (flat > bestScore) continue;
+      bestScore = flat; best = e;
+    }
+    return best;
+  }
+
   begin(runner) {
     if (this.slamming || runner.onGround) return false;
     this.slamming = true;
     this.slamFrom = runner.pos.y;
     runner.vel.y = Math.min(runner.vel.y, -SLAM.enterSpeed);
+
+    // Steer the dive onto them. You still have to set the dive up - get above
+    // someone and commit - but you are not asked to hit a 2.6m disc by feel.
+    const target = this.candidate(runner);
+    if (target) {
+      const dy = runner.pos.y - target.pos.y;
+      const vy = Math.abs(runner.vel.y);
+      const g = 15.5 * 2.6;                                   // slam gravity
+      const t = (-vy + Math.sqrt(vy * vy + 2 * g * dy)) / g;  // time to their height
+      if (t > 0.02) {
+        const need = Math.hypot(target.pos.x - runner.pos.x, target.pos.z - runner.pos.z) / t;
+        if (need <= SLAM.assistSpeed) {
+          runner.vel.x = (target.pos.x - runner.pos.x) / t;
+          runner.vel.z = (target.pos.z - runner.pos.z) / t;
+        }
+      }
+      this.aimedAt = target;
+    }
     runner.slamming = true;
     return true;
   }

@@ -26,6 +26,14 @@ roof, dive again.
 `Space` jumps when you're standing and **slams** when you're in the air. That's
 the whole movement system.
 
+The jump is a real leap, not a hop — about 7m of rise — because you need to be
+able to get above someone from a standing start. Without that, one missed slam
+left you stranded on a roof with no way back into the air.
+
+The dive **steers onto whoever is below you**, so you set it up (get above
+someone, commit) rather than being asked to hit a 2.6m disc by feel while
+falling.
+
 The gun is still there, but it doesn't move you. It's for clearing someone you
 can't reach, or can't line up in time.
 
@@ -87,6 +95,9 @@ textures. Nothing in the shooter was changed to make this work.
   actually run it.
 - Enemies stand still and only shoot back occasionally. Being shot shakes the
   camera but cannot end your run - randomness should never do that.
+- Resolution adapts to your frame rate. The simulation clamps its timestep, so
+  below about 20fps the whole game runs in slow motion and the audio stutters;
+  dropping resolution keeps it above that instead.
 - The bounce numbers are tuned so the arc matches the gap between rooftops. Change
   `restitution` or `forward` much and the course stops being chainable; there is
   a simulation in the test folder that checks every hop.

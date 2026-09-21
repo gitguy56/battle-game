@@ -14,7 +14,8 @@ export const TUNE = {
   airSteer: 0.72,         // how freely you can redirect mid-air, 0..1
   walkSpeed: 11.5,
   maxSpeed: 52,
-  jump: 7.4,
+  jump: 15.0,          // a proper leap - 7.3m of rise, enough to get above
+                       // a rooftop enemy and dive back onto them
   coyote: 0.14,           // grace after walking off an edge
   jumpBuffer: 0.14,       // grace for pressing jump just before landing
   slideBoost: 3.0,

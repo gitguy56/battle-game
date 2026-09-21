@@ -126,6 +126,13 @@ export class Audio {
   // you can tell roughly where it came from.
   gunshotAt(from, to, voice, pan = null) {
     if (!this.ctx) return;
+    // Rate-limit other people's gunfire. A crowd firing at once otherwise
+    // schedules dozens of overlapping sounds and the mix turns to mush.
+    const now = this.ctx.currentTime;
+    if (this._farShots == null) { this._farShots = []; }
+    this._farShots = this._farShots.filter(t => now - t < 0.35);
+    if (this._farShots.length >= 5) return;
+    this._farShots.push(now);
     const v = voice || { crack: 2600, body: 800, gain: 1 };
     const dist = Math.hypot(from.x - to.x, from.z - to.z);
     const atten = Math.max(0.04, 1 - dist / 60) * (v.gain ?? 1);

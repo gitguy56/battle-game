@@ -11,7 +11,14 @@ import { Effects } from '../../prototype/src/effects.js';
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+// Resolution is by far the biggest cost, so it adapts: if frames get slow the
+// renderer drops resolution rather than letting the whole game run in slow
+// motion (the simulation clamps its timestep, so low frame rate literally
+// slows the game down and makes the audio stutter).
+const PR_MAX = Math.min(devicePixelRatio || 1, 1.25), PR_MIN = 0.6;
+let pixelRatio = PR_MAX;
+renderer.setPixelRatio(pixelRatio);
+let frameAvg = 16, prCooldown = 0;
 const size = () => [canvas.clientWidth || innerWidth, canvas.clientHeight || innerHeight];
 renderer.setSize(...size(), false);
 renderer.shadowMap.enabled = true;
@@ -194,6 +201,14 @@ function enemyFire(dt) {
   }
 }
 
+// Tell the player the one thing they need to know, when they need it.
+function slamHint() {
+  if (slam.slamming) return null;
+  if (!runner.onGround && slam.candidate(runner)) return '<b>SPACE</b> slam';
+  if (runner.onGround) return '<b>SPACE</b> jump, then <b>SPACE</b> again to slam';
+  return null;
+}
+
 // One rule, and it is the whole tension: lose the chain and you start again.
 function failRun(reason) {
   hud.say(reason, 1.1);
@@ -205,7 +220,24 @@ function failRun(reason) {
 const clock = new THREE.Clock();
 function tick() {
   requestAnimationFrame(tick);
-  const raw = Math.min(clock.getDelta(), 0.05);
+  const rawUnclamped = clock.getDelta();
+  const raw = Math.min(rawUnclamped, 0.05);
+
+  // rolling frame time, and a slow nudge to the resolution either way
+  frameAvg += (Math.min(rawUnclamped * 1000, 200) - frameAvg) * 0.06;
+  prCooldown -= raw;
+  if (prCooldown <= 0) {
+    const want = frameAvg > 22 ? pixelRatio - 0.15
+               : frameAvg < 12 ? pixelRatio + 0.1 : pixelRatio;
+    const next = Math.max(PR_MIN, Math.min(PR_MAX, want));
+    if (Math.abs(next - pixelRatio) > 0.01) {
+      pixelRatio = next;
+      renderer.setPixelRatio(pixelRatio);
+      const [w, h] = size();
+      renderer.setSize(w, h, false);
+    }
+    prCooldown = 0.6;
+  }
 
   // a beat of slow motion on each hop keeps long chains readable
   timeScale += ((slam.freeze > 0 ? SLAM.freezeScale : 1) - timeScale) * Math.min(1, raw * 26);
@@ -248,8 +280,8 @@ function tick() {
   camera.updateProjectionMatrix();
   const eye = runner.eye;
   camera.position.set(
-    eye.x + (Math.random() - 0.5) * shake * 0.05,
-    eye.y + Math.sin(runner.bob) * (runner.onGround ? 0.028 : 0.006) + (Math.random() - 0.5) * shake * 0.05,
+    eye.x + (Math.random() - 0.5) * shake * 0.035,
+    eye.y + Math.sin(runner.bob) * (runner.onGround ? 0.008 : 0.002) + (Math.random() - 0.5) * shake * 0.05,
     eye.z);
   camera.rotation.order = 'YXZ';
   camera.rotation.set(runner.pitch, runner.yaw, camRoll);
@@ -264,6 +296,7 @@ function tick() {
       hasTarget: true, medals: course.medals,
       weapon: weapon.spec.short, mag: weapon.mag, reserve: weapon.reserve,
       reloading: weapon.reloading > 0,
+      hint: slamHint(),
     });
   }
   renderer.render(scene, camera);
@@ -273,6 +306,8 @@ tick();
 // Debug hook for the automated tests and for poking from the console.
 window.__run = {
   runner, slam, course, camera, scene, renderer, input, audio, effects, weapon,
+  get frameAvg() { return frameAvg; },
+  get pixelRatio() { return pixelRatio; },
   get state() { return state; },
   get run() { return run; },
   start, finish, toMenu,

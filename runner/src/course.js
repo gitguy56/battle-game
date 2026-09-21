@@ -138,23 +138,32 @@ export function buildCourse(scene) {
     for (const [ox, oz, pw, pd] of [[0, -d / 2, w + 0.8, 0.4], [0, d / 2, w + 0.8, 0.4],
                                     [-w / 2, 0, 0.4, d + 0.8], [w / 2, 0, 0.4, d + 0.8]])
       add(box(pw, 0.7, pd, M.trim, x + ox, h + 0.85, z + oz), true);
-    // Rooftop clutter. Bare roofs read as featureless planes at speed, and you
-    // need edges and silhouettes to judge distance while moving.
+    // Rooftop clutter, kept to the edges. The middle of every roof is where
+    // the enemy stands and where you land on them, and clutter there both
+    // blocks the landing and can wedge you in place.
     if (!first && !last) {
-      add(box(2.2, 1.6, 2.2, M.metal, x + w / 4, h + 1.3, z - d / 4), true);
-      add(box(3.0, 0.9, 1.6, M.metal, x - w / 3, h + 0.95, z - d / 3), true);
-      add(box(1.4, 0.55, 1.4, M.trim, x + w / 3, h + 0.78, z + d / 3), true);
-      // a low duct running across, which also works as cover
-      add(box(w * 0.6, 0.8, 1.1, M.trim, x, h + 0.9, z + d / 5), true);
+      const edge = (fx, fz) => [x + fx * (w / 2 - 1.8), z + fz * (d / 2 - 1.8)];
+      let [cx, cz] = edge(0.9, -0.9);
+      add(box(2.2, 1.6, 2.2, M.metal, cx, h + 1.3, cz), true);
+      [cx, cz] = edge(-0.9, -0.85);
+      add(box(3.0, 0.9, 1.6, M.metal, cx, h + 0.95, cz), true);
+      [cx, cz] = edge(0.85, 0.9);
+      add(box(1.4, 0.55, 1.4, M.trim, cx, h + 0.78, cz), true);
+      // a duct along one edge rather than across the middle
+      [cx, cz] = edge(-0.95, 0);
+      add(box(1.1, 0.8, d * 0.5, M.trim, cx, h + 0.9, cz), true);
       if (i % 2 === 0) {
-        add(box(1.0, 3.2, 1.0, M.trim, x - w / 4, h + 2.1, z + d / 4), true);
-        add(box(2.6, 1.4, 2.6, M.metal, x - w / 4, h + 4.4, z + d / 4), true);
+        [cx, cz] = edge(-0.88, 0.88);
+        add(box(1.0, 3.2, 1.0, M.trim, cx, h + 2.1, cz), true);
+        add(box(2.6, 1.4, 2.6, M.metal, cx, h + 4.4, cz), true);
       }
       if (i % 3 === 0) {
+        [cx, cz] = edge(0.2, -0.95);
         for (let k = 0; k < 3; k++)
-          add(box(0.5, 2.4, 0.5, M.trim, x - w / 2 + 1.5 + k * 1.1, h + 1.7, z - d / 2 + 1.5), true);
+          add(box(0.5, 2.4, 0.5, M.trim, cx + k * 1.1, h + 1.7, cz), true);
       }
     }
+
     checkpoints.push(new THREE.Vector3(x, h + 0.6, z + d / 2 - 2.5));
   });
 
@@ -178,6 +187,17 @@ export function buildCourse(scene) {
     new THREE.Vector3(start.x + 0.34, start.y + 1.75, start.z + 0.34));
   const spawnBlocked = colliders.some(c => c.intersectsBox(sb));
   if (spawnBlocked) console.error('Chainrunner: the spawn point is inside geometry');
+
+  // Every target needs clear air around it, or you cannot land on them and can
+  // get wedged in the clutter beside them.
+  const crowded = [];
+  field.list.forEach((e, i) => {
+    const box = new THREE.Box3(
+      new THREE.Vector3(e.pos.x - 3, e.pos.y + 0.25, e.pos.z - 3),   // above their feet, so the roof itself does not count
+      new THREE.Vector3(e.pos.x + 3, e.pos.y + 6, e.pos.z + 3));
+    if (colliders.some(c => c.intersectsBox(box))) crowded.push(i);
+  });
+  if (crowded.length) console.error('Chainrunner: clutter around targets', crowded);
 
   return {
     spawnBlocked,

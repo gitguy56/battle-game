@@ -13,6 +13,7 @@ export class HUD {
       <div id="r-chain"><span class="x">x</span><b>1</b><i></i></div>
       <div id="r-cross"><s></s><s></s><s></s><s></s></div>
       <div id="r-speed"><b>0</b><span>m/s</span></div>
+      <div id="r-hint"></div>
       <div id="r-msg"></div>
       <div id="r-pace"></div>
       <div id="r-weapon"></div>`;
@@ -25,6 +26,7 @@ export class HUD {
     this.msg = root.querySelector('#r-msg');
     this.pace = root.querySelector('#r-pace');
     this.weapon = root.querySelector('#r-weapon');
+    this.hint = root.querySelector('#r-hint');
     this.msgT = 0;
   }
 
@@ -44,7 +46,7 @@ export class HUD {
   }
 
   update(dt, { time, speed, chain, chainTimer, chainMax, armed, slamming, hasTarget,
-               medals, weapon, mag, reserve, reloading }) {
+               medals, weapon, mag, reserve, reloading, hint }) {
     if (weapon) {
       this.weapon.innerHTML = reloading
         ? `<b>${weapon}</b> <span class="rl">reloading</span>`
@@ -70,6 +72,9 @@ export class HUD {
       this.chain.style.opacity = '0';
     }
     this.cross.classList.toggle('slam', !!slamming);
+    // Teach the one control that matters, at the moment it applies.
+    this.hint.innerHTML = hint || '';
+    this.hint.style.opacity = hint ? '1' : '0';
 
     this.cross.classList.toggle('on', !!hasTarget);
     this.setPace(time, medals);
