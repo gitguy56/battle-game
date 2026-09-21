@@ -86,8 +86,12 @@ export class Audio {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(gain, t + 0.004);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(g).connect(this.chain(pan));
+    const out = this.chain(pan);
+    src.connect(f).connect(g).connect(out);
     src.start(t); src.stop(t + dur + 0.05);
+    // Tear the nodes down when the sound ends. Without this every panned shot
+    // leaves a live node in the graph and the audio degrades over a session.
+    src.onended = () => { try { g.disconnect(); f.disconnect(); if (out !== this.master) out.disconnect(); } catch {} };
   }
 
   tone({ f0 = 120, f1 = 40, dur = 0.12, gain = 0.5, delay = 0, type = 'sine', pan = null }) {
@@ -100,8 +104,10 @@ export class Audio {
     const g = c.createGain();
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(this.chain(pan));
+    const out = this.chain(pan);
+    o.connect(g).connect(out);
     o.start(t); o.stop(t + dur + 0.02);
+    o.onended = () => { try { g.disconnect(); if (out !== this.master) out.disconnect(); } catch {} };
   }
 
   // --------------------------------------------------------------- shots ---

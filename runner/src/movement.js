@@ -8,11 +8,11 @@ const STEP_UP = 1.0;   // parapets are 0.7m, so this clears roof furniture
 
 export const TUNE = {
   gravity: 15.5,          // gentler than real, so arcs are long
-  groundAccel: 46,
+  groundAccel: 70,
   groundFriction: 5.2,    // the ground steals speed - that is the point
   airAccel: 30,
   airSteer: 0.72,         // how freely you can redirect mid-air, 0..1
-  walkSpeed: 8.5,
+  walkSpeed: 11.5,
   maxSpeed: 52,
   jump: 7.4,
   coyote: 0.14,           // grace after walking off an edge
@@ -169,7 +169,20 @@ export class Runner {
         next[axis] += d;
         if (!this.blocked(next)) { this.pos.copy(next); continue; }
         if (axis === 'y') {
-          if (d < 0) grounded = true;
+          if (d < 0) {
+            grounded = true;
+            // Settle onto the surface instead of stopping wherever the substep
+            // happened to end. Without this the rest height varies slightly
+            // every frame and the view jitters while you walk.
+            let lo = 0, hi = -d;
+            for (let k = 0; k < 8; k++) {
+              const mid = (lo + hi) / 2;
+              const probe = this.pos.clone();
+              probe.y -= mid;
+              if (this.blocked(probe)) hi = mid; else lo = mid;
+            }
+            this.pos.y -= lo;
+          }
           this.vel.y = 0;
           step.y = 0;
         } else {

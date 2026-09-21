@@ -8,15 +8,15 @@ export const SLAM = {
   enterSpeed: 14,        // the dive's kick. Kept low so that how far you FELL,
                          // not the dive itself, is what decides the bounce.
   gravityMul: 2.6,       // and how hard it pulls once you are diving
-  hitRadius: 1.9,        // horizontal reach of the smash
-  hitAbove: 3.2,         // how far above them you can be and still connect
+  hitRadius: 2.6,        // horizontal reach of the smash
+  hitAbove: 4.2,         // how far above them you can be and still connect
   // Restitution has to be well under 1 or the bounce runs away: at 0.92 it
   // climbed to the cap and threw a 119m arc at enemies 25m apart.
   restitution: 0.55,
   baseBounce: 10.8,
   maxBounce: 34,        // headroom, so a long drop really does throw you further
   hDamp: 0.68,           // horizontal is damped on impact, then pushed forward,
-  forward: 4.5,          // so speed settles instead of growing every bounce
+  forward: 3.0,          // so speed settles instead of growing every bounce
   perChain: 1.6,
   maxChainBonus: 12,
   window: 3.2,           // lose the chain and the run restarts
