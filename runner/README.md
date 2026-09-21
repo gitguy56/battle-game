@@ -18,26 +18,26 @@ than you went in, and don't break the chain.
 
 ## The idea
 
-**Your gun is the movement.** There is no hop button. You shoot an enemy, and
-killing them throws you through where they were standing, faster than you
-arrived. Miss and nothing happens — you keep falling.
+**You fall onto people.** There is no teleport and no hop button. You get above
+someone, dive, and the impact kills them outright and throws you back up — and
+**the further you fell, the higher you go**. Bounce, arc forward, pick the next
+roof, dive again.
 
-Kill again before the chain bar empties and the throw gets stronger. So the fast
-line through a level is the one that never breaks the chain, and **the route is
-a line of enemies across the rooftops**, visible from the start.
+`Space` jumps when you're standing and **slams** when you're in the air. That's
+the whole movement system.
 
-Weapon choice is movement choice: the marksman rifle chains from range, the
-rifle is the all-rounder. Anyone further than 52m is dimmed — you can kill them,
-but they will not throw you.
+The gun is still there, but it doesn't move you. It's for clearing someone you
+can't reach, or can't line up in time.
+
+**Lose the chain and the run restarts.** The bar under the chain counter is how
+long you have to land the next one. There are no checkpoints and no penalties —
+you just go again, instantly.
 
 Three kinds of enemy:
 
-- **Grunt** — one shot, the standard throw
-- **Heavy** — three shots, a much bigger throw, and it shoots back
-- **Flyer** — one shot, throws you upward instead of forward
-
-**You cannot die.** Falling drops you on the last rooftop you passed and costs a
-second. Being shot costs your chain, which hurts more.
+- **Grunt** — the standard bounce
+- **Heavy** — tougher to shoot, but a slam kills anything outright
+- **Flyer** — placed high, so they're the ones that gain you altitude
 
 ## Why it plays the way it does
 
@@ -62,10 +62,11 @@ Source is in `src/`, then `npm install` once and `npm run build`.
 |---|---|---|
 | how floaty it is | `src/movement.js` | `TUNE.gravity`, `TUNE.airSteer` |
 | top speed | `src/movement.js` | `TUNE.maxSpeed` |
-| how much a kill gives you | `src/hop.js` | `CHAIN.baseBoost`, `CHAIN.perChain` |
-| how far a kill can throw you | `src/hop.js` | `CHAIN.launchRange` |
-| how long the chain lasts | `src/hop.js` | `CHAIN.window` |
-| the slow-motion beat | `src/hop.js` | `CHAIN.freeze`, `CHAIN.freezeScale` |
+| how high a slam throws you | `src/slam.js` | `SLAM.baseBounce`, `SLAM.restitution` |
+| how much falling further matters | `src/slam.js` | `SLAM.enterSpeed`, `SLAM.maxBounce` |
+| how far each bounce carries you | `src/slam.js` | `SLAM.forward`, `SLAM.hDamp` |
+| how long before the run restarts | `src/slam.js` | `SLAM.window` |
+| the slow-motion beat | `src/slam.js` | `SLAM.freeze`, `SLAM.freezeScale` |
 | the course itself | `src/course.js` | `BUILDINGS`, `ENEMIES` |
 | enemy types | `src/enemy.js` | `ENEMY_KINDS` |
 | medal times | `src/course.js` | `medals` |
@@ -84,7 +85,10 @@ textures. Nothing in the shooter was changed to make this work.
 
 - One course. The medal times are a guess and want tuning once someone has
   actually run it.
-- Enemies stand still and only shoot back occasionally. They are obstacles and
-  fuel, not a fight.
+- Enemies stand still and only shoot back occasionally. Being shot shakes the
+  camera but cannot end your run - randomness should never do that.
+- The bounce numbers are tuned so the arc matches the gap between rooftops. Change
+  `restitution` or `forward` much and the course stops being chainable; there is
+  a simulation in the test folder that checks every hop.
 - The course is 400m long, so the far end compresses toward the horizon. You can
   reliably read the next five or six kills, not all 32.

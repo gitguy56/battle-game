@@ -1,4 +1,4 @@
-import { CHAIN } from './hop.js';
+import { SLAM } from './slam.js';
 
 const fmt = (t) => {
   const m = Math.floor(t / 60), s = t % 60;
@@ -43,8 +43,8 @@ export class HUD {
     this.pace.className = time <= g ? 'gold' : time <= s ? 'silver' : '';
   }
 
-  update(dt, { time, speed, chain, chainTimer, hasTarget, medals,
-               weapon, mag, reserve, reloading }) {
+  update(dt, { time, speed, chain, chainTimer, chainMax, armed, slamming, hasTarget,
+               medals, weapon, mag, reserve, reloading }) {
     if (weapon) {
       this.weapon.innerHTML = reloading
         ? `<b>${weapon}</b> <span class="rl">reloading</span>`
@@ -57,14 +57,19 @@ export class HUD {
     this.speed.style.fontSize = (34 + f * 22).toFixed(0) + 'px';
     this.speed.style.color = `hsl(${(48 - f * 48).toFixed(0)}, ${(20 + f * 70).toFixed(0)}%, ${(72 + f * 12).toFixed(0)}%)`;
 
+    // The bar is how long you have before the run restarts, so it runs hot as
+    // it empties rather than just fading away.
     if (chain > 0) {
+      const frac = Math.max(0, chainTimer / (chainMax || SLAM.window));
       this.chain.style.opacity = '1';
       this.chainNum.textContent = chain;
-      this.chainBar.style.transform = `scaleX(${Math.max(0, chainTimer / CHAIN.window).toFixed(3)})`;
-      this.chain.classList.toggle('hot', chain >= 5);
+      this.chainBar.style.transform = `scaleX(${frac.toFixed(3)})`;
+      this.chain.classList.toggle('hot', armed && frac < 0.35);
+      this.chain.classList.toggle('big', chain >= 5);
     } else {
       this.chain.style.opacity = '0';
     }
+    this.cross.classList.toggle('slam', !!slamming);
 
     this.cross.classList.toggle('on', !!hasTarget);
     this.setPace(time, medals);

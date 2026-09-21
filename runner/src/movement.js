@@ -34,6 +34,7 @@ export class Runner {
     this.lastGroundPos = new THREE.Vector3();
     // the shared Weapon class reads these
     this.alive = true;
+    this.slamming = false;
     this.crouching = false;
     this.bobAmount = 0;
     this.bobPhase = 0;
@@ -44,6 +45,7 @@ export class Runner {
     this.vel.set(0, 0, 0);
     this.yaw = yaw; this.pitch = 0;
     this.onGround = false;
+    this.slamming = false;
     this.coyote = 0; this.jumpBuffered = 0; this.airTime = 0;
     this.lastGroundPos.copy(pos);
   }
@@ -108,7 +110,7 @@ export class Runner {
       this.airTime = 0;
     } else {
       this.airTime += dt;
-      if (wanting) {
+      if (wanting && !this.slamming) {
         // Redirect rather than add: the speed you have is preserved and steered,
         // which is what makes long arcs feel controllable without hidden tech.
         const sp = this.speed;
@@ -132,7 +134,7 @@ export class Runner {
       this.jumped = true;
     }
 
-    this.vel.y -= T.gravity * dt;
+    this.vel.y -= T.gravity * (this.slamming ? 2.6 : 1) * dt;
 
     const sp = this.speed;
     if (sp > T.maxSpeed) {

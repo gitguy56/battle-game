@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { buildCourse } from './course.js';
 import { Runner, TUNE } from './movement.js';
-import { ChainSystem, CHAIN } from './hop.js';
+import { SlamSystem, SLAM } from './slam.js';
 import { Weapon } from '../../prototype/src/weapon.js';
 import { WEAPONS } from '../../prototype/src/weapons.js';
 import { HUD } from './hud.js';
@@ -39,7 +39,7 @@ const course = buildCourse(scene);
 const runner = new Runner(course);
 const audio = new Audio();
 const effects = new Effects(scene);
-const chain = new ChainSystem(course.field, course);
+const slam = new SlamSystem(course.field, course);
 const weapon = new Weapon(camera, scene, audio, effects);
 const hud = new HUD(document.getElementById('hud'));
 const ui = new UI(document.getElementById('ui'));
@@ -63,6 +63,12 @@ const KEYS = {
 const clearInput = () => { for (const k in input) input[k] = 0; };
 
 addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+    e.preventDefault();
+    if (state === 'running' && !runner.onGround) slam.begin(runner);
+    else input.jump = 1;
+    return;
+  }
   if (KEYS[e.code] !== undefined) { input[KEYS[e.code]] = 1; e.preventDefault(); }
   if (e.code === 'Backspace' && (state === 'running' || state === 'results')) { e.preventDefault(); start(); }
   if (e.code === 'KeyR' && state === 'running') weapon.startReload();
@@ -70,7 +76,10 @@ addEventListener('keydown', e => {
   if (state !== 'running') return;
   if (e.code === 'KeyQ' || e.code === 'Digit1' || e.code === 'Digit2') weapon.swap();
 });
-addEventListener('keyup', e => { if (KEYS[e.code] !== undefined) input[KEYS[e.code]] = 0; });
+addEventListener('keyup', e => {
+  if (e.code === 'Space') { input.jump = 0; return; }
+  if (KEYS[e.code] !== undefined) input[KEYS[e.code]] = 0;
+});
 canvas.addEventListener('mousedown', e => {
   if (document.pointerLockElement !== canvas) { if (state === 'running') canvas.requestPointerLock(); return; }
   if (e.button === 0) input.fire = 1;
@@ -98,11 +107,11 @@ addEventListener('resize', () => {
 // ------------------------------------------------------------------ flow ---
 function start() {
   course.field.reviveAll();
-  chain.reset();
+  slam.reset();
   runner.reset(course.start, course.startYaw);
   weapon.reset([{ id: 'rifle' }, { id: 'dmr' }]);
   effects.clear();
-  run = { time: 0, falls: 0, topSpeed: 0, checkpoint: 0, shots: 0, hits: 0 };
+  run = { time: 0, topSpeed: 0, peak: 0, shots: 0, hits: 0, restarts: run ? run.restarts + 1 : 0 };
   timeScale = 1; fovKick = 0; shake = 0; camRoll = 0;
   state = 'running';
   ui.show(null);
@@ -131,8 +140,8 @@ function finish() {
   }
   ui.setResults({
     time: run.time, best: prev, medals: course.medals,
-    bestChain: chain.best, hops: chain.kills,
-    topSpeed: run.topSpeed, falls: run.falls,
+    bestChain: slam.best, hops: slam.kills,
+    topSpeed: run.topSpeed, falls: run.restarts,
     accuracy: run.shots ? Math.round((run.hits / run.shots) * 100) : 0,
   });
   ui.show('results');
@@ -141,27 +150,29 @@ ui.on.play = start;
 ui.on.menu = toMenu;
 toMenu();
 
-// A kill is what throws you. This is the whole game: aim, hit, get flung.
-function onKill(enemy) {
-  const r = chain.onKill(enemy, camera, runner);
-  effects.hit(enemy.centre, new THREE.Vector3(0, 1, 0), camera);
-  if (!r.launched) {
-    audio.burst({ dur: 0.08, freq: 700, type: 'bandpass', q: 2, gain: 0.14 });
-    hud.say('too far to launch', 0.9);
-    return;
-  }
+function onSlamKill(r) {
   const step = Math.min(r.chain, 12);
-  audio.tone({ f0: 300 + step * 48, f1: 620 + step * 70, dur: 0.14, gain: 0.30, type: 'triangle' });
-  audio.burst({ dur: 0.16, freq: 1600 + step * 120, type: 'bandpass', q: 1.4, gain: 0.22 });
-  if (r.kind === 'flyer') audio.tone({ f0: 200, f1: 460, dur: 0.24, gain: 0.26 });
-  effects.muzzle(r.pos, new THREE.Vector3(0, 1, 0));
-  fovKick = Math.min(1.4, fovKick + 0.5);
-  shake = Math.min(1, shake + 0.32);
+  audio.tone({ f0: 150 + step * 20, f1: 60, dur: 0.22, gain: 0.42, type: 'square' });
+  audio.burst({ dur: 0.26, freq: 420 + step * 60, type: 'lowpass', gain: 0.38 });
+  audio.tone({ f0: 520 + step * 60, f1: 900 + step * 80, dur: 0.16, gain: 0.22, type: 'triangle', delay: 0.05 });
+  effects.hit(r.pos, new THREE.Vector3(0, 1, 0), camera);
+  effects.impact(r.pos, new THREE.Vector3(0, 1, 0), camera);
+  fovKick = Math.min(1.6, fovKick + 0.6);
+  shake = Math.min(1, shake + 0.55);
   if (r.chain >= 5 && r.chain % 5 === 0) hud.say(`chain ${r.chain}`, 1.0);
 }
 
-// Light return fire. It cannot kill you - it breaks your chain, which in a
-// speedrun hurts more.
+function onGroundSlam(r) {
+  const killed = slam.groundShock(runner);
+  audio.tone({ f0: 90, f1: 38, dur: 0.4, gain: 0.5, type: 'square' });
+  audio.burst({ dur: 0.5, freq: 260, type: 'lowpass', gain: 0.4 });
+  effects.impact(runner.pos.clone(), new THREE.Vector3(0, 1, 0), camera);
+  for (const e of killed) effects.hit(e.centre, new THREE.Vector3(0, 1, 0), camera);
+  shake = Math.min(1, shake + 0.45 + killed.length * 0.1);
+  if (killed.length) hud.say(`${killed.length} down`, 0.9);
+}
+
+// Light return fire. It cannot end your run - randomness should never do that.
 function enemyFire(dt) {
   for (const e of course.field.list) {
     if (!e.alive || !e.kind.fires) continue;
@@ -179,13 +190,15 @@ function enemyFire(dt) {
     const pan = ((e.pos.x - runner.pos.x) * rx + (e.pos.z - runner.pos.z) * rz) / (d || 1);
     audio.gunshotAt(e.pos, runner.pos, WEAPONS[e.kind.weapon].sound, pan);
     effects.muzzle(e.eye.clone().addScaledVector(to, 0.4), to);
-    if (Math.random() < 0.22 * (1 - Math.min(d / 65, 0.8))) {
-      chain.breakChain();
-      shake = Math.min(1, shake + 0.5);
-      hud.say('chain broken', 0.9);
-      audio.hurt();
-    }
+    if (Math.random() < 0.22 * (1 - Math.min(d / 65, 0.8))) shake = Math.min(1, shake + 0.4);
   }
+}
+
+// One rule, and it is the whole tension: lose the chain and you start again.
+function failRun(reason) {
+  hud.say(reason, 1.1);
+  audio.tone({ f0: 260, f1: 70, dur: 0.38, gain: 0.32, type: 'sawtooth' });
+  start();
 }
 
 // ------------------------------------------------------------------ loop ---
@@ -195,37 +208,28 @@ function tick() {
   const raw = Math.min(clock.getDelta(), 0.05);
 
   // a beat of slow motion on each hop keeps long chains readable
-  timeScale += ((chain.freeze > 0 ? CHAIN.freezeScale : 1) - timeScale) * Math.min(1, raw * 26);
+  timeScale += ((slam.freeze > 0 ? SLAM.freezeScale : 1) - timeScale) * Math.min(1, raw * 26);
   const dt = raw * timeScale;
 
   if (state === 'running') {
     run.time += raw;                       // the clock is never slowed
     runner.update(dt, input);
-    chain.update(dt, camera, runner);
+    const hit = slam.update(dt, runner, camera);
+    if (hit?.type === 'enemy') onSlamKill(hit);
+    else if (hit?.type === 'ground') onGroundSlam(hit);
+
     weapon.update(dt, input, runner, course.field.list, course, (origin, tag) => {
       run.shots++;
       if (tag) run.hits++;
     });
-    for (const e of course.field.list) {
-      if (e.justDied) { e.justDied = false; onKill(e); }
-    }
+    for (const e of course.field.list) e.justDied = false;   // gun kills give no bounce
     enemyFire(dt);
     run.topSpeed = Math.max(run.topSpeed, runner.speed);
+    run.peak = Math.max(run.peak, runner.pos.y);
 
-    // which checkpoint have we passed?
-    for (let i = run.checkpoint + 1; i < course.checkpoints.length; i++) {
-      if (runner.pos.z < course.checkpoints[i].z + 3) run.checkpoint = i; else break;
-    }
+    if (slam.broken) { failRun('chain lost'); return; }
 
-    if (runner.pos.y < TUNE.killFloor) {
-      run.falls++;
-      run.time += 1.0;                     // falling costs a second, not a life
-      chain.breakChain();
-      const cp = course.checkpoints[run.checkpoint];
-      runner.reset(cp, runner.yaw);
-      hud.say('-1s', 1.0);
-      audio.tone({ f0: 300, f1: 90, dur: 0.3, gain: 0.25, type: 'sawtooth' });
-    }
+    if (runner.pos.y < TUNE.killFloor) { failRun('fell'); return; }
 
     if (course.finishBox.containsPoint(runner.pos) || runner.pos.z < course.finishZ - 6) finish();
   }
@@ -254,7 +258,9 @@ function tick() {
 
   if (state === 'running') {
     hud.update(raw, {
-      time: run.time, speed: sp, chain: chain.chain, chainTimer: chain.timer,
+      time: run.time, speed: sp, chain: slam.chain,
+      chainTimer: slam.armed ? slam.timer : SLAM.window,
+      chainMax: SLAM.window, armed: slam.armed, slamming: slam.slamming,
       hasTarget: true, medals: course.medals,
       weapon: weapon.spec.short, mag: weapon.mag, reserve: weapon.reserve,
       reloading: weapon.reloading > 0,
@@ -266,7 +272,7 @@ tick();
 
 // Debug hook for the automated tests and for poking from the console.
 window.__run = {
-  runner, chain, course, camera, scene, renderer, input, audio, effects, weapon,
+  runner, slam, course, camera, scene, renderer, input, audio, effects, weapon,
   get state() { return state; },
   get run() { return run; },
   start, finish, toMenu,
