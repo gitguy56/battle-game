@@ -1,4 +1,4 @@
-import { HOP } from './hop.js';
+import { CHAIN } from './hop.js';
 
 const fmt = (t) => {
   const m = Math.floor(t / 60), s = t % 60;
@@ -14,7 +14,8 @@ export class HUD {
       <div id="r-cross"><s></s><s></s><s></s><s></s></div>
       <div id="r-speed"><b>0</b><span>m/s</span></div>
       <div id="r-msg"></div>
-      <div id="r-pace"></div>`;
+      <div id="r-pace"></div>
+      <div id="r-weapon"></div>`;
     this.timer = root.querySelector('#r-timer b');
     this.chain = root.querySelector('#r-chain');
     this.chainNum = root.querySelector('#r-chain b');
@@ -23,6 +24,7 @@ export class HUD {
     this.cross = root.querySelector('#r-cross');
     this.msg = root.querySelector('#r-msg');
     this.pace = root.querySelector('#r-pace');
+    this.weapon = root.querySelector('#r-weapon');
     this.msgT = 0;
   }
 
@@ -41,7 +43,13 @@ export class HUD {
     this.pace.className = time <= g ? 'gold' : time <= s ? 'silver' : '';
   }
 
-  update(dt, { time, speed, chain, chainTimer, hasTarget, medals }) {
+  update(dt, { time, speed, chain, chainTimer, hasTarget, medals,
+               weapon, mag, reserve, reloading }) {
+    if (weapon) {
+      this.weapon.innerHTML = reloading
+        ? `<b>${weapon}</b> <span class="rl">reloading</span>`
+        : `<b>${weapon}</b> <span class="ammo">${mag}<i>/${reserve}</i></span>`;
+    }
     this.timer.textContent = fmt(time);
     this.speed.textContent = Math.round(speed);
     // the number grows and warms as you go faster - speed should feel like something
@@ -52,7 +60,7 @@ export class HUD {
     if (chain > 0) {
       this.chain.style.opacity = '1';
       this.chainNum.textContent = chain;
-      this.chainBar.style.transform = `scaleX(${Math.max(0, chainTimer / HOP.chainWindow).toFixed(3)})`;
+      this.chainBar.style.transform = `scaleX(${Math.max(0, chainTimer / CHAIN.window).toFixed(3)})`;
       this.chain.classList.toggle('hot', chain >= 5);
     } else {
       this.chain.style.opacity = '0';

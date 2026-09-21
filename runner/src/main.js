@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { buildCourse } from './course.js';
 import { Runner, TUNE } from './movement.js';
-import { HopSystem, HOP } from './hop.js';
+import { ChainSystem, CHAIN } from './hop.js';
+import { Weapon } from '../../prototype/src/weapon.js';
+import { WEAPONS } from '../../prototype/src/weapons.js';
 import { HUD } from './hud.js';
 import { UI } from './ui.js';
 import { Audio } from '../../prototype/src/audio.js';
@@ -35,9 +37,10 @@ scene.add(camera);
 
 const course = buildCourse(scene);
 const runner = new Runner(course);
-const hop = new HopSystem(course.field, course);
 const audio = new Audio();
 const effects = new Effects(scene);
+const chain = new ChainSystem(course.field, course);
+const weapon = new Weapon(camera, scene, audio, effects);
 const hud = new HUD(document.getElementById('hud'));
 const ui = new UI(document.getElementById('ui'));
 
@@ -51,7 +54,7 @@ let timeScale = 1;
 let camRoll = 0, fovKick = 0, shake = 0;
 
 // ----------------------------------------------------------------- input ---
-const input = { fwd: 0, back: 0, left: 0, right: 0, jump: 0 };
+const input = { fwd: 0, back: 0, left: 0, right: 0, jump: 0, fire: 0, ads: 0 };
 const KEYS = {
   KeyW: 'fwd', KeyS: 'back', KeyA: 'left', KeyD: 'right',
   ArrowUp: 'fwd', ArrowDown: 'back', ArrowLeft: 'left', ArrowRight: 'right',
@@ -61,13 +64,21 @@ const clearInput = () => { for (const k in input) input[k] = 0; };
 
 addEventListener('keydown', e => {
   if (KEYS[e.code] !== undefined) { input[KEYS[e.code]] = 1; e.preventDefault(); }
-  if (e.code === 'KeyR' && (state === 'running' || state === 'results')) start();
+  if (e.code === 'Backspace' && (state === 'running' || state === 'results')) { e.preventDefault(); start(); }
+  if (e.code === 'KeyR' && state === 'running') weapon.startReload();
   if (e.code === 'Escape' && state === 'running') toMenu();
+  if (state !== 'running') return;
+  if (e.code === 'KeyQ' || e.code === 'Digit1' || e.code === 'Digit2') weapon.swap();
 });
 addEventListener('keyup', e => { if (KEYS[e.code] !== undefined) input[KEYS[e.code]] = 0; });
 canvas.addEventListener('mousedown', e => {
   if (document.pointerLockElement !== canvas) { if (state === 'running') canvas.requestPointerLock(); return; }
-  if (e.button === 0) doHop();
+  if (e.button === 0) input.fire = 1;
+  if (e.button === 2) input.ads = 1;
+});
+addEventListener('mouseup', e => {
+  if (e.button === 0) input.fire = 0;
+  if (e.button === 2) input.ads = 0;
 });
 addEventListener('mousemove', e => {
   if (document.pointerLockElement !== canvas || state !== 'running') return;
@@ -87,10 +98,11 @@ addEventListener('resize', () => {
 // ------------------------------------------------------------------ flow ---
 function start() {
   course.field.reviveAll();
-  hop.reset();
+  chain.reset();
   runner.reset(course.start, course.startYaw);
+  weapon.reset([{ id: 'rifle' }, { id: 'dmr' }]);
   effects.clear();
-  run = { time: 0, falls: 0, topSpeed: 0, checkpoint: 0 };
+  run = { time: 0, falls: 0, topSpeed: 0, checkpoint: 0, shots: 0, hits: 0 };
   timeScale = 1; fovKick = 0; shake = 0; camRoll = 0;
   state = 'running';
   ui.show(null);
@@ -119,8 +131,9 @@ function finish() {
   }
   ui.setResults({
     time: run.time, best: prev, medals: course.medals,
-    bestChain: hop.bestChain, hops: hop.hops,
+    bestChain: chain.best, hops: chain.kills,
     topSpeed: run.topSpeed, falls: run.falls,
+    accuracy: run.shots ? Math.round((run.hits / run.shots) * 100) : 0,
   });
   ui.show('results');
 }
@@ -128,19 +141,51 @@ ui.on.play = start;
 ui.on.menu = toMenu;
 toMenu();
 
-function doHop() {
-  const r = hop.tryHop(camera, runner);
-  if (!r) { audio.burst({ dur: 0.05, freq: 900, type: 'bandpass', q: 3, gain: 0.12 }); return; }
-  // the pitch climbs with the chain, so a long chain is audible as well as visible
+// A kill is what throws you. This is the whole game: aim, hit, get flung.
+function onKill(enemy) {
+  const r = chain.onKill(enemy, camera, runner);
+  effects.hit(enemy.centre, new THREE.Vector3(0, 1, 0), camera);
+  if (!r.launched) {
+    audio.burst({ dur: 0.08, freq: 700, type: 'bandpass', q: 2, gain: 0.14 });
+    hud.say('too far to launch', 0.9);
+    return;
+  }
   const step = Math.min(r.chain, 12);
   audio.tone({ f0: 300 + step * 48, f1: 620 + step * 70, dur: 0.14, gain: 0.30, type: 'triangle' });
   audio.burst({ dur: 0.16, freq: 1600 + step * 120, type: 'bandpass', q: 1.4, gain: 0.22 });
-  if (r.kind === 'anchor') audio.tone({ f0: 180, f1: 420, dur: 0.24, gain: 0.26, type: 'sine' });
-  effects.hit(r.pos, new THREE.Vector3(0, 1, 0), camera);
+  if (r.kind === 'flyer') audio.tone({ f0: 200, f1: 460, dur: 0.24, gain: 0.26 });
   effects.muzzle(r.pos, new THREE.Vector3(0, 1, 0));
-  fovKick = Math.min(1.4, fovKick + 0.55);
-  shake = Math.min(1, shake + 0.35);
+  fovKick = Math.min(1.4, fovKick + 0.5);
+  shake = Math.min(1, shake + 0.32);
   if (r.chain >= 5 && r.chain % 5 === 0) hud.say(`chain ${r.chain}`, 1.0);
+}
+
+// Light return fire. It cannot kill you - it breaks your chain, which in a
+// speedrun hurts more.
+function enemyFire(dt) {
+  for (const e of course.field.list) {
+    if (!e.alive || !e.kind.fires) continue;
+    const d = e.pos.distanceTo(runner.pos);
+    if (d > 65) continue;
+    e.fireTimer -= dt;
+    if (e.fireTimer > 0) continue;
+    e.fireTimer = 1.4 + Math.random() * 2.2;
+    const to = runner.eye.clone().sub(e.eye);
+    const dist = to.length();
+    to.normalize();
+    if (new THREE.Raycaster(e.eye, to, 0.5, dist - 0.5)
+        .intersectObjects(course.solids, false).length) continue;
+    const rx = Math.cos(runner.yaw), rz = -Math.sin(runner.yaw);
+    const pan = ((e.pos.x - runner.pos.x) * rx + (e.pos.z - runner.pos.z) * rz) / (d || 1);
+    audio.gunshotAt(e.pos, runner.pos, WEAPONS[e.kind.weapon].sound, pan);
+    effects.muzzle(e.eye.clone().addScaledVector(to, 0.4), to);
+    if (Math.random() < 0.22 * (1 - Math.min(d / 65, 0.8))) {
+      chain.breakChain();
+      shake = Math.min(1, shake + 0.5);
+      hud.say('chain broken', 0.9);
+      audio.hurt();
+    }
+  }
 }
 
 // ------------------------------------------------------------------ loop ---
@@ -150,13 +195,21 @@ function tick() {
   const raw = Math.min(clock.getDelta(), 0.05);
 
   // a beat of slow motion on each hop keeps long chains readable
-  timeScale += ((hop.freeze > 0 ? HOP.freezeScale : 1) - timeScale) * Math.min(1, raw * 26);
+  timeScale += ((chain.freeze > 0 ? CHAIN.freezeScale : 1) - timeScale) * Math.min(1, raw * 26);
   const dt = raw * timeScale;
 
   if (state === 'running') {
     run.time += raw;                       // the clock is never slowed
     runner.update(dt, input);
-    hop.update(dt, camera, runner);
+    chain.update(dt, camera, runner);
+    weapon.update(dt, input, runner, course.field.list, course, (origin, tag) => {
+      run.shots++;
+      if (tag) run.hits++;
+    });
+    for (const e of course.field.list) {
+      if (e.justDied) { e.justDied = false; onKill(e); }
+    }
+    enemyFire(dt);
     run.topSpeed = Math.max(run.topSpeed, runner.speed);
 
     // which checkpoint have we passed?
@@ -167,7 +220,7 @@ function tick() {
     if (runner.pos.y < TUNE.killFloor) {
       run.falls++;
       run.time += 1.0;                     // falling costs a second, not a life
-      hop.chain = 0; hop.chainTimer = 0;
+      chain.breakChain();
       const cp = course.checkpoints[run.checkpoint];
       runner.reset(cp, runner.yaw);
       hud.say('-1s', 1.0);
@@ -177,7 +230,7 @@ function tick() {
     if (course.finishBox.containsPoint(runner.pos) || runner.pos.z < course.finishZ - 6) finish();
   }
 
-  course.field.update(dt, camera);
+  course.field.update(dt, camera, runner);
   effects.update(dt, camera);
 
   // camera: speed opens the lens and leans into turns
@@ -187,7 +240,7 @@ function tick() {
   const targetRoll = THREE.MathUtils.clamp((input.right - input.left) * 0.045, -0.05, 0.05);
   camRoll += (targetRoll - camRoll) * Math.min(1, raw * 6);
 
-  camera.fov = BASE_FOV + fovKick * 14;
+  camera.fov = (BASE_FOV + fovKick * 14) * weapon.adsFov;
   camera.updateProjectionMatrix();
   const eye = runner.eye;
   camera.position.set(
@@ -201,8 +254,10 @@ function tick() {
 
   if (state === 'running') {
     hud.update(raw, {
-      time: run.time, speed: sp, chain: hop.chain, chainTimer: hop.chainTimer,
-      hasTarget: !!hop.best, medals: course.medals,
+      time: run.time, speed: sp, chain: chain.chain, chainTimer: chain.timer,
+      hasTarget: true, medals: course.medals,
+      weapon: weapon.spec.short, mag: weapon.mag, reserve: weapon.reserve,
+      reloading: weapon.reloading > 0,
     });
   }
   renderer.render(scene, camera);
@@ -211,11 +266,10 @@ tick();
 
 // Debug hook for the automated tests and for poking from the console.
 window.__run = {
-  runner, hop, course, camera, scene, renderer, input, audio, effects,
+  runner, chain, course, camera, scene, renderer, input, audio, effects, weapon,
   get state() { return state; },
   get run() { return run; },
   start, finish, toMenu,
-  doHop,
   teleport(x, y, z) { runner.pos.set(x, y, z); runner.vel.set(0, 0, 0); },
   face(yaw, pitch = 0) { runner.yaw = yaw; runner.pitch = pitch; },
 };

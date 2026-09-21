@@ -32,6 +32,11 @@ export class Runner {
     this.airTime = 0;
     this.bob = 0;
     this.lastGroundPos = new THREE.Vector3();
+    // the shared Weapon class reads these
+    this.alive = true;
+    this.crouching = false;
+    this.bobAmount = 0;
+    this.bobPhase = 0;
   }
 
   reset(pos, yaw = 0) {
@@ -139,6 +144,9 @@ export class Runner {
 
     if (this.onGround) this.lastGroundPos.copy(this.pos);
     this.bob += dt * (this.onGround ? 4 + this.speed * 0.6 : 1.5);
+    this.bobPhase = this.bob;
+    this.bobAmount += ((this.onGround ? Math.min(1, this.speed / 9) : 0.12) - this.bobAmount)
+      * Math.min(1, dt * 7);
   }
 
   // Substepped so that at 50 m/s we cannot pass straight through a wall.

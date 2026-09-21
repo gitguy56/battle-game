@@ -15,11 +15,15 @@ export class UI {
           <div class="how">
             <div><b>W A S D</b><span>move</span></div>
             <div><b>Space</b><span>jump</span></div>
-            <div><b>Left mouse</b><span>hop to the marked target</span></div>
-            <div><b>R</b><span>restart instantly</span></div>
+            <div><b>Left mouse</b><span>shoot &mdash; a kill throws you through them</span></div>
+            <div><b>Right mouse</b><span>aim</span></div>
+            <div><b>Q</b><span>swap weapon</span></div>
+            <div><b>R</b><span>reload</span></div>
+            <div><b>Backspace</b><span>restart instantly</span></div>
           </div>
-          <p class="hint">Hop before the chain bar empties and the boost keeps growing.
-            You cannot die &mdash; falling just costs you a second and your chain.</p>
+          <p class="hint">Kill again before the chain bar empties and the throw keeps
+            getting stronger. Anyone dimmed is too far away to launch you. You cannot
+            die &mdash; falling costs a second, and being shot costs your chain.</p>
           <div class="acts"><button data-act="play" class="primary">Run it</button></div>
           <p class="best" id="ui-best"></p>
         </div>
@@ -71,7 +75,8 @@ export class UI {
       (r.best != null ? `+${(r.time - r.best).toFixed(2)}s off your best` : 'first run');
     this.root.querySelector('#ui-stats').innerHTML = `
       <div><b>${r.bestChain}</b><span>longest chain</span></div>
-      <div><b>${r.hops}</b><span>hops</span></div>
+      <div><b>${r.hops}</b><span>kills</span></div>
+      <div><b>${r.accuracy}%</b><span>accuracy</span></div>
       <div><b>${Math.round(r.topSpeed)}</b><span>top speed m/s</span></div>
       <div><b>${r.falls}</b><span>falls</span></div>
       <div class="wide"><b>${delta}</b><span>gold is ${fmt(r.medals.gold)}</span></div>`;

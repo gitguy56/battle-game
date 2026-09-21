@@ -9,25 +9,35 @@ than you went in, and don't break the chain.
 |---|---|
 | move | `W A S D` |
 | jump | `Space` |
-| hop | left mouse — takes the marked target |
-| restart | `R` — instantly, from anywhere |
+| shoot | left mouse — **a kill throws you through them** |
+| aim | right mouse |
+| swap weapon | `Q` |
+| reload | `R` |
+| restart | `Backspace` — instantly, from anywhere |
 | quit to menu | `Esc` |
 
 ## The idea
 
-You take an enemy's place and inherit a speed boost. Hop again before the chain
-bar empties and the boost grows. So the fast line through a level is the one
-that never breaks the chain, and **the route is visible as a line of targets**
-from the moment you spawn.
+**Your gun is the movement.** There is no hop button. You shoot an enemy, and
+killing them throws you through where they were standing, faster than you
+arrived. Miss and nothing happens — you keep falling.
 
-Three kinds:
+Kill again before the chain bar empties and the throw gets stronger. So the fast
+line through a level is the one that never breaks the chain, and **the route is
+a line of enemies across the rooftops**, visible from the start.
 
-- **Gold** — the standard hop
-- **Blue** — a bigger boost, placed at the long gaps
-- **Pink** — throws you upward instead of forward, for when you need height
+Weapon choice is movement choice: the marksman rifle chains from range, the
+rifle is the all-rounder. Anyone further than 52m is dimmed — you can kill them,
+but they will not throw you.
 
-**You cannot die.** Falling resets you to the last platform you passed and costs
-one second on the clock — plus your chain, which is the real punishment.
+Three kinds of enemy:
+
+- **Grunt** — one shot, the standard throw
+- **Heavy** — three shots, a much bigger throw, and it shoots back
+- **Flyer** — one shot, throws you upward instead of forward
+
+**You cannot die.** Falling drops you on the last rooftop you passed and costs a
+second. Being shot costs your chain, which hurts more.
 
 ## Why it plays the way it does
 
@@ -52,11 +62,12 @@ Source is in `src/`, then `npm install` once and `npm run build`.
 |---|---|---|
 | how floaty it is | `src/movement.js` | `TUNE.gravity`, `TUNE.airSteer` |
 | top speed | `src/movement.js` | `TUNE.maxSpeed` |
-| how much a hop gives you | `src/hop.js` | `HOP.baseBoost`, `HOP.perChain` |
-| how far you can hop | `src/hop.js` | `HOP.range`, `HOP.cone` |
-| how long the chain lasts | `src/hop.js` | `HOP.chainWindow` |
-| the slow-motion beat | `src/hop.js` | `HOP.freeze`, `HOP.freezeScale` |
-| the course itself | `src/course.js` | `PLATFORMS`, `TARGETS` |
+| how much a kill gives you | `src/hop.js` | `CHAIN.baseBoost`, `CHAIN.perChain` |
+| how far a kill can throw you | `src/hop.js` | `CHAIN.launchRange` |
+| how long the chain lasts | `src/hop.js` | `CHAIN.window` |
+| the slow-motion beat | `src/hop.js` | `CHAIN.freeze`, `CHAIN.freezeScale` |
+| the course itself | `src/course.js` | `BUILDINGS`, `ENEMIES` |
+| enemy types | `src/enemy.js` | `ENEMY_KINDS` |
 | medal times | `src/course.js` | `medals` |
 
 `window.__run` in the browser console exposes the runner, the hop system and the
@@ -64,14 +75,16 @@ course.
 
 ## Shared with the shooter
 
-`audio.js` and `effects.js` are imported from `../prototype/src/` rather than
-copied, so both games use the same synthesised sound and the same pooled
-particles. Nothing in the shooter was changed to make this work.
+Imported from `../prototype/src/` rather than copied: the whole weapon system
+(`weapon.js`, `weapons.js` — all five guns, with their real recoil, spread and
+reload), the synthesised audio, the pooled particle effects, and the procedural
+textures. Nothing in the shooter was changed to make this work.
 
 ## Known limits
 
 - One course. The medal times are a guess and want tuning once someone has
   actually run it.
-- Targets respawn only on restart, so there is no reason to double back.
-- The course is 400m of mostly flat ground, so the far end compresses toward the
-  horizon. You can reliably read the next five or six hops, not all 27.
+- Enemies stand still and only shoot back occasionally. They are obstacles and
+  fuel, not a fight.
+- The course is 400m long, so the far end compresses toward the horizon. You can
+  reliably read the next five or six kills, not all 32.
