@@ -8,55 +8,56 @@ import { EnemyField } from './enemy.js';
 //
 // [z, x, width, depth, height]
 const BUILDINGS = [
-  [20, 0, 26, 30, 26],          // a tall roof - the opening move is to dive off it
-  [-28, 0.0, 22, 22, 10.5],
-  [-42, -20.0, 16, 18, 5.5],
-  [-54.0, 9.4, 22, 22, 13.1],
-  [-81.5, 11.7, 22, 22, 15.0],
-  [-95.5, -8.3, 16, 18, 10.0],
-  [-110.5, 5.1, 22, 22, 17.5],
-  [-141.0, -5.3, 22, 22, 14.5],
-  [-155.0, 14.7, 16, 18, 9.5],
-  [-173.0, -11.7, 22, 22, 12.4],
-  [-206.5, -9.3, 22, 22, 9.7],
-  [-220.5, 10.7, 16, 18, 5],
-  [-241.5, 0.2, 22, 22, 9.2],
-  [-278.0, 9.5, 22, 22, 6],
+  [14, 0, 18, 16, 34],          // a tall narrow roof - you start near the edge,
+                                //  looking down at the first target
+  [-28, 0.0, 22, 22, 14.0],
+  [-42, -20.0, 16, 18, 9.0],
+  [-54.0, 9.4, 22, 22, 16.6],
+  [-81.5, 11.7, 22, 22, 18.5],
+  [-95.5, -8.3, 16, 18, 13.5],
+  [-110.5, 5.1, 22, 22, 21.0],
+  [-141.0, -5.3, 22, 22, 18.0],
+  [-155.0, 14.7, 16, 18, 13.0],
+  [-173.0, -11.7, 22, 22, 15.9],
+  [-206.5, -9.3, 22, 22, 13.2],
+  [-220.5, 10.7, 16, 18, 8.2],
+  [-241.5, 0.2, 22, 22, 12.7],
+  [-278.0, 9.5, 22, 22, 9.2],
   [-292.0, -10.5, 16, 18, 5],
-  [-316.0, 11.6, 22, 22, 6],
-  [-355.5, 4.9, 22, 22, 7.0],
-  [-369.5, -15.1, 16, 18, 5],
-  [-396.5, -5.5, 22, 22, 11.3],
-  [-439.0, -11.8, 22, 22, 12.1],
-  [-453.0, 8.2, 16, 18, 7.1],
-  [-483.0, -9.1, 22, 22, 14.3],
-  [-528.5, 0.4, 22, 22, 15.4],
-  [-542.5, -19.6, 16, 18, 10.4],
-  [-575.5, 9.6, 22, 22, 17.1],
-  [-624.0, 11.6, 22, 22, 13.4],
-  [-638.0, -8.4, 16, 18, 8.4],
+  [-316.0, 11.6, 22, 22, 9.1],
+  [-355.5, 4.9, 22, 22, 10.5],
+  [-369.5, -15.1, 16, 18, 5.5],
+  [-396.5, -5.5, 22, 22, 14.8],
+  [-439.0, -11.8, 22, 22, 15.6],
+  [-453.0, 8.2, 16, 18, 10.6],
+  [-483.0, -9.1, 22, 22, 17.8],
+  [-528.5, 0.4, 22, 22, 18.9],
+  [-542.5, -19.6, 16, 18, 13.9],
+  [-575.5, 9.6, 22, 22, 20.6],
+  [-624.0, 11.6, 22, 22, 16.9],
+  [-638.0, -8.4, 16, 18, 11.9],
   [-664.0, 0, 30, 30, 16],      // finish roof
 ];
 
 // [z, x, y, kind] - y is metres above the street.
 const ENEMIES = [
-  [-28, 0.0, 15.0, 'grunt'],
-  [-54.0, 9.4, 17.6, 'flyer'],
-  [-81.5, 11.7, 19.5, 'grunt'],
-  [-110.5, 5.1, 22.0, 'grunt'],
-  [-141.0, -5.3, 19.0, 'heavy'],
-  [-173.0, -11.7, 16.9, 'grunt'],
-  [-206.5, -9.3, 14.2, 'grunt'],
-  [-241.5, 0.2, 13.7, 'flyer'],
-  [-278.0, 9.5, 10.2, 'grunt'],
-  [-316.0, 11.6, 10.1, 'heavy'],
-  [-355.5, 4.9, 11.5, 'flyer'],
-  [-396.5, -5.5, 15.8, 'grunt'],
-  [-439.0, -11.8, 16.6, 'grunt'],
-  [-483.0, -9.1, 18.8, 'flyer'],
-  [-528.5, 0.4, 19.9, 'heavy'],
-  [-575.5, 9.6, 21.6, 'grunt'],
-  [-624.0, 11.6, 17.9, 'flyer'],
+  [-28, 0.0, 14.55, 'grunt'],
+  [-54.0, 9.4, 22.65, 'flyer'],
+  [-81.5, 11.7, 19.05, 'grunt'],
+  [-110.5, 5.1, 21.55, 'grunt'],
+  [-141.0, -5.3, 18.55, 'heavy'],
+  [-173.0, -11.7, 16.45, 'grunt'],
+  [-206.5, -9.3, 13.75, 'grunt'],
+  [-241.5, 0.2, 18.75, 'flyer'],
+  [-278.0, 9.5, 9.75, 'grunt'],
+  [-316.0, 11.6, 9.65, 'heavy'],
+  [-355.5, 4.9, 16.55, 'flyer'],
+  [-396.5, -5.5, 15.35, 'grunt'],
+  [-439.0, -11.8, 16.15, 'grunt'],
+  [-483.0, -9.1, 23.85, 'flyer'],
+  [-528.5, 0.4, 19.45, 'heavy'],
+  [-575.5, 9.6, 21.15, 'grunt'],
+  [-624.0, 11.6, 22.95, 'flyer'],
 ];
 
 function mergeStatics(scene, meshes) {
@@ -139,7 +140,7 @@ export function buildCourse(scene) {
       add(box(pw, 0.7, pd, M.trim, x + ox, h + 0.85, z + oz), true);
     // Rooftop clutter. Bare roofs read as featureless planes at speed, and you
     // need edges and silhouettes to judge distance while moving.
-    if (!last) {
+    if (!first && !last) {
       add(box(2.2, 1.6, 2.2, M.metal, x + w / 4, h + 1.3, z - d / 4), true);
       add(box(3.0, 0.9, 1.6, M.metal, x - w / 3, h + 0.95, z - d / 3), true);
       add(box(1.4, 0.55, 1.4, M.trim, x + w / 3, h + 0.78, z + d / 3), true);
@@ -169,9 +170,19 @@ export function buildCourse(scene) {
 
   const merged = mergeStatics(scene, solids);
 
+  // Guard against exactly the bug that shipped once: a piece of rooftop clutter
+  // landing on the spawn and wedging the player in place.
+  const start = new THREE.Vector3(0, BUILDINGS[0][4] + 0.8, BUILDINGS[0][0] + 5);
+  const sb = new THREE.Box3(
+    new THREE.Vector3(start.x - 0.34, start.y, start.z - 0.34),
+    new THREE.Vector3(start.x + 0.34, start.y + 1.75, start.z + 0.34));
+  const spawnBlocked = colliders.some(c => c.intersectsBox(sb));
+  if (spawnBlocked) console.error('Chainrunner: the spawn point is inside geometry');
+
   return {
+    spawnBlocked,
     colliders, solids: merged, field, checkpoints,
-    start: new THREE.Vector3(0, 26.8, 26),
+    start,
     startYaw: 0,
     finishZ: -664.0,
     finishBox: new THREE.Box3(

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 // lose, so the ground is slow on purpose and the air is where the game is.
 const RADIUS = 0.34;
 const HEIGHT = 1.75;
+const STEP_UP = 1.0;   // parapets are 0.7m, so this clears roof furniture
 
 export const TUNE = {
   gravity: 15.5,          // gentler than real, so arcs are long
@@ -153,6 +154,7 @@ export class Runner {
 
   // Substepped so that at 50 m/s we cannot pass straight through a wall.
   move(dt) {
+    const wasGrounded = this.onGround;
     const total = this.vel.clone().multiplyScalar(dt);
     const dist = total.length();
     const steps = Math.max(1, Math.ceil(dist / 0.22));
@@ -171,9 +173,15 @@ export class Runner {
           this.vel.y = 0;
           step.y = 0;
         } else {
-          // slide along the surface instead of stopping dead
-          this.vel[axis] = 0;
-          step[axis] = 0;
+          // Step over low things - parapets, ducts, kerbs - rather than
+          // stopping dead on them. Without this a 0.7m roof edge is a wall.
+          const up = next.clone();
+          let stepped = false;
+          for (let lift = 0.25; wasGrounded && lift <= STEP_UP; lift += 0.25) {
+            up.y = next.y + lift;
+            if (!this.blocked(up)) { this.pos.copy(up); stepped = true; break; }
+          }
+          if (!stepped) { this.vel[axis] = 0; step[axis] = 0; }
         }
       }
     }

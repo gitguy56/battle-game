@@ -132,6 +132,9 @@ export class SlamSystem {
     }
     if (killed.length) {
       this.kills += killed.length;
+      runner.vel.y = Math.max(runner.vel.y, SLAM.baseBounce * 1.35);
+      runner.onGround = false;
+      runner.coyote = 0;
       this.chain = this.armed && this.timer > 0 ? this.chain + 1 : 1;
       this.armed = true;
       this.timer = SLAM.window;
